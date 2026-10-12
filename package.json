@@ -3,7 +3,7 @@
   "version": "1.0.0",
   "type": "module",
   "scripts": {
-    "dev": "tsx server.ts",
+    "dev": "PORT=3000 tsx server.ts",
     "start": "node server.ts",
     "build": "echo 'No build step required'",
     "lint": "echo 'No linting required'"
