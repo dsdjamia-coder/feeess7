@@ -3,6 +3,7 @@ import { doc, onSnapshot, collection, getDocs, writeBatch, setDoc, query, where,
 import { db, auth } from '../../config/firebase-config.js';
 import { ADMIN_AUTH_DOC_ID, SINGLE_ADMIN_MODE, STAFF_ACCESS_COLLECTION } from '../../config/app-config.js';
 import { BASE_PATH, applyInstitutionBranding, escapeHtml } from '../shared/app-common.js';
+import { showToast } from '../shared/toaster.js';
 
 // --- Global Variables ---
 let isCurrentAdmin = false;
@@ -247,10 +248,138 @@ const resultMatchesExam = (row = {}, value = '') => {
     if (rowExamId.endsWith(`::${value}`) || rowExamId.endsWith(`_${value}`)) return true;
     return false;
 };
+export const showAppConfirm = ({
+    title = 'Confirm Action',
+    message = 'Are you sure you want to proceed?',
+    confirmText = 'Confirm',
+    cancelText = 'Cancel',
+    type = 'danger'
+} = {}) => {
+    return new Promise((resolve) => {
+        const modal = document.getElementById('app-confirm-modal');
+        const titleEl = document.getElementById('app-confirm-title');
+        const msgEl = document.getElementById('app-confirm-message');
+        const actionBtn = document.getElementById('app-confirm-action-btn');
+        const actionLabel = document.getElementById('app-confirm-action-label');
+        const cancelBtn = document.getElementById('app-confirm-cancel-btn');
+        const iconContainer = document.getElementById('app-confirm-icon-container');
+        const iconEl = document.getElementById('app-confirm-icon');
+
+        if (!modal) {
+            resolve(window.confirm(message));
+            return;
+        }
+
+        if (titleEl) titleEl.textContent = title;
+        if (msgEl) msgEl.textContent = message;
+        if (actionLabel) actionLabel.textContent = confirmText;
+        if (cancelBtn) cancelBtn.textContent = cancelText;
+
+        if (iconContainer && iconEl && actionBtn) {
+            if (type === 'danger') {
+                iconContainer.className = 'w-14 h-14 mx-auto rounded-full flex items-center justify-center text-2xl mb-4 bg-red-100 text-red-600';
+                iconEl.className = 'fas fa-trash-alt';
+                actionBtn.className = 'w-1/2 sm:w-auto px-5 py-2.5 rounded-xl bg-red-600 hover:bg-red-700 text-white font-bold text-xs shadow-md transition flex items-center justify-center gap-1.5 cursor-pointer';
+            } else if (type === 'warning') {
+                iconContainer.className = 'w-14 h-14 mx-auto rounded-full flex items-center justify-center text-2xl mb-4 bg-amber-100 text-amber-600';
+                iconEl.className = 'fas fa-triangle-exclamation';
+                actionBtn.className = 'w-1/2 sm:w-auto px-5 py-2.5 rounded-xl bg-amber-600 hover:bg-amber-700 text-white font-bold text-xs shadow-md transition flex items-center justify-center gap-1.5 cursor-pointer';
+            } else {
+                iconContainer.className = 'w-14 h-14 mx-auto rounded-full flex items-center justify-center text-2xl mb-4 bg-indigo-100 text-indigo-600';
+                iconEl.className = 'fas fa-question-circle';
+                actionBtn.className = 'w-1/2 sm:w-auto px-5 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-xs shadow-md transition flex items-center justify-center gap-1.5 cursor-pointer';
+            }
+        }
+
+        modal.classList.remove('hidden');
+        modal.style.display = 'flex';
+        document.body.classList.add('modal-scroll-lock');
+
+        const cleanUp = (result) => {
+            modal.classList.add('hidden');
+            modal.style.display = 'none';
+            document.body.classList.remove('modal-scroll-lock');
+            if (actionBtn) actionBtn.onclick = null;
+            if (cancelBtn) cancelBtn.onclick = null;
+            resolve(result);
+        };
+
+        if (actionBtn) actionBtn.onclick = () => cleanUp(true);
+        if (cancelBtn) cancelBtn.onclick = () => cleanUp(false);
+    });
+};
+
+export const showAppAlert = ({
+    title = 'Notice',
+    message = '',
+    type = 'info'
+} = {}) => {
+    return new Promise((resolve) => {
+        const modal = document.getElementById('app-alert-modal');
+        const titleEl = document.getElementById('app-alert-title');
+        const msgEl = document.getElementById('app-alert-message');
+        const okBtn = document.getElementById('app-alert-ok-btn');
+        const iconContainer = document.getElementById('app-alert-icon-container');
+        const iconEl = document.getElementById('app-alert-icon');
+
+        if (!modal) {
+            window.alert(message);
+            resolve();
+            return;
+        }
+
+        if (titleEl) titleEl.textContent = title;
+        if (msgEl) msgEl.textContent = message;
+
+        if (iconContainer && iconEl && okBtn) {
+            if (type === 'success') {
+                iconContainer.className = 'w-14 h-14 mx-auto rounded-full flex items-center justify-center text-2xl mb-4 bg-emerald-100 text-emerald-600';
+                iconEl.className = 'fas fa-circle-check';
+                okBtn.className = 'w-full sm:w-auto px-6 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs shadow-md transition cursor-pointer';
+            } else if (type === 'error') {
+                iconContainer.className = 'w-14 h-14 mx-auto rounded-full flex items-center justify-center text-2xl mb-4 bg-red-100 text-red-600';
+                iconEl.className = 'fas fa-circle-xmark';
+                okBtn.className = 'w-full sm:w-auto px-6 py-2.5 rounded-xl bg-red-600 hover:bg-red-700 text-white font-bold text-xs shadow-md transition cursor-pointer';
+            } else if (type === 'warning') {
+                iconContainer.className = 'w-14 h-14 mx-auto rounded-full flex items-center justify-center text-2xl mb-4 bg-amber-100 text-amber-600';
+                iconEl.className = 'fas fa-triangle-exclamation';
+                okBtn.className = 'w-full sm:w-auto px-6 py-2.5 rounded-xl bg-amber-600 hover:bg-amber-700 text-white font-bold text-xs shadow-md transition cursor-pointer';
+            } else {
+                iconContainer.className = 'w-14 h-14 mx-auto rounded-full flex items-center justify-center text-2xl mb-4 bg-indigo-100 text-indigo-600';
+                iconEl.className = 'fas fa-circle-info';
+                okBtn.className = 'w-full sm:w-auto px-6 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-xs shadow-md transition cursor-pointer';
+            }
+        }
+
+        modal.classList.remove('hidden');
+        modal.style.display = 'flex';
+        document.body.classList.add('modal-scroll-lock');
+
+        const cleanUp = () => {
+            modal.classList.add('hidden');
+            modal.style.display = 'none';
+            document.body.classList.remove('modal-scroll-lock');
+            if (okBtn) okBtn.onclick = null;
+            resolve();
+        };
+
+        if (okBtn) okBtn.onclick = () => cleanUp();
+    });
+};
+
 const notify = (message = '', type = 'info') => {
     if (!message) return;
-    if (type === 'error') return alert(`Error: ${message}`);
-    alert(message);
+    showToast(message, type);
+};
+
+const alert = (message) => {
+    if (!message) return;
+    const msg = String(message);
+    const isError = /error|fail|invalid|stopped|required|select|cannot|choose/i.test(msg);
+    const isSuccess = /success|completed|saved|synced|restored|uploaded|published/i.test(msg);
+    const type = isError ? 'error' : isSuccess ? 'success' : 'info';
+    const title = isError ? 'Attention' : isSuccess ? 'Success' : 'Notice';
+    showAppAlert({ title, message: msg, type });
 };
 const withBusyButton = async (buttonId, labelBusy, runner) => {
     const btn = document.getElementById(buttonId);
@@ -1881,8 +2010,15 @@ document.getElementById('exam-list-container').addEventListener('click', async (
     }
 
     if(delBtn) {
-        if(confirm("Are you sure you want to delete this exam?")) {
+        const ok = await showAppConfirm({
+            title: 'Delete Exam Schema',
+            message: 'Are you sure you want to delete this exam schema? All configured subjects and criteria will be removed.',
+            confirmText: 'Delete Schema',
+            type: 'danger'
+        });
+        if (ok) {
             await deleteDoc(doc(db, `${BASE_PATH}/resultSchemas`, delBtn.dataset.id));
+            showToast('Exam schema deleted successfully', 'success');
         }
     }
 });
@@ -2211,13 +2347,25 @@ const downloadMarksTemplate = (asXlsx = false) => {
 const updateBulkStatus = (message = '', percent = 0, type = 'info') => {
     const statusEl = document.getElementById('marks-bulk-status');
     const progressEl = document.getElementById('marks-bulk-progress');
+    const pctEl = document.getElementById('marks-bulk-percent');
+    const iconEl = document.getElementById('marks-bulk-status-icon');
     if (statusEl) {
         statusEl.textContent = message;
-        statusEl.className = `text-xs mt-2 ${type === 'error' ? 'text-red-600 font-semibold' : type === 'success' ? 'text-emerald-700 font-semibold' : 'text-gray-600'}`;
+        statusEl.className = `font-semibold truncate text-xs ${type === 'error' ? 'text-red-600' : type === 'success' ? 'text-emerald-700' : 'text-slate-700'}`;
+    }
+    if (pctEl) {
+        pctEl.textContent = `${Math.round(percent)}%`;
+        pctEl.className = `font-extrabold shrink-0 font-mono text-xs ${type === 'error' ? 'text-red-600' : type === 'success' ? 'text-emerald-700' : 'text-indigo-700'}`;
+    }
+    if (iconEl) {
+        iconEl.innerHTML = type === 'error' ? '<i class="fas fa-circle-exclamation text-red-500"></i>'
+            : type === 'success' ? '<i class="fas fa-circle-check text-emerald-500"></i>'
+            : (percent > 0 && percent < 100) ? '<i class="fas fa-spinner fa-spin text-indigo-500"></i>'
+            : '<i class="fas fa-file-import text-indigo-500"></i>';
     }
     if (progressEl) {
         progressEl.style.width = `${Math.max(0, Math.min(100, percent))}%`;
-        progressEl.className = `${type === 'error' ? 'bg-red-500' : type === 'success' ? 'bg-emerald-500' : 'bg-indigo-500'} h-2 rounded-full transition-all duration-300`;
+        progressEl.className = `${type === 'error' ? 'bg-red-500' : type === 'success' ? 'bg-emerald-500' : 'bg-indigo-600'} h-2.5 rounded-full transition-all duration-300`;
     }
 };
 const uploadBulkMarks = async () => {
@@ -2231,12 +2379,12 @@ const uploadBulkMarks = async () => {
     if (!file) return alert('Choose a file first.');
     if (!currentExamSchema) return alert('Schema not loaded for selected exam.');
     if (!window.XLSX) return alert('Spreadsheet library is still loading. Try again in a moment.');
-    updateBulkStatus('Reading file...', 10);
+    updateBulkStatus('Reading spreadsheet file...', 15);
     const subjectRows = getSchemaSubjectRows(currentExamSchema, currentExamContext?.key || '');
     const subjectNames = subjectRows.map((subject) => subject.name);
     const studentMap = new Map(students.filter((s) => s.class === className && (s.academicYear === currentAcademicYear || !s.academicYear)).map((s) => [String(s.id), s]));
     const wb = XLSX.read(await file.arrayBuffer(), { type: 'array' });
-    updateBulkStatus('Parsing rows...', 30);
+    updateBulkStatus('Validating student records and marks...', 40);
     const rows = XLSX.utils.sheet_to_json(wb.Sheets[wb.SheetNames[0]], { defval: '' });
     const payloads = [];
     const errors = [];
@@ -2270,41 +2418,60 @@ const uploadBulkMarks = async () => {
     });
     if (errors.length) {
         updateBulkStatus(`Upload stopped: ${errors.slice(0, 3).join(' ')}`, 100, 'error');
-        alert(`Please fix these issues and upload again:\n\n${errors.slice(0, 10).join('\n')}${errors.length > 10 ? `\n...and ${errors.length - 10} more` : ''}`);
+        showAppAlert({
+            title: 'Spreadsheet Format Issues',
+            message: `Please resolve these errors and upload again:\n\n${errors.slice(0, 8).join('\n')}${errors.length > 8 ? `\n...and ${errors.length - 8} more issues` : ''}`,
+            type: 'error'
+        });
         return;
     }
     if (!payloads.length) {
         updateBulkStatus('No valid marks found in file.', 0, 'error');
-        return alert('No valid rows found in file.');
+        return alert('No valid student mark rows found in file.');
     }
-    updateBulkStatus(`Saving ${payloads.length} result row(s)...`, 60);
-    const batch = writeBatch(db);
-    payloads.forEach((entry) => {
-        const docId = sanitizeBulkDocId(`${currentExamSchema.id}_${currentExamContext?.key || ''}_${entry.studentId}`);
-        const summary = buildResultSummary(entry.marks, subjectRows);
-        batch.set(doc(db, `${BASE_PATH}/examResults`, docId), {
-            id: docId,
-            examId,
-            schemaId: currentExamSchema.id,
-            examKey: currentExamContext?.key || '',
-            examType: currentExamContext?.key || '',
-            examLabel: currentExamContext?.label || '',
-            classLabel: className,
-            academicYear: currentAcademicYear || '',
-            studentId: entry.studentId,
-            marks: entry.marks,
-            attendance: entry.attendance,
-            grades: summary.grades,
-            totals: summary.totals,
-            showMarksToStudents: true,
-            updatedAt: Date.now(),
-            published: false
-        }, { merge: true });
-    });
-    await batch.commit();
+    
+    // Commit in chunks to show real progress
+    const chunkSize = 100;
+    for (let i = 0; i < payloads.length; i += chunkSize) {
+        const chunk = payloads.slice(i, i + chunkSize);
+        const batch = writeBatch(db);
+        chunk.forEach((entry) => {
+            const docId = sanitizeBulkDocId(`${currentExamSchema.id}_${currentExamContext?.key || ''}_${entry.studentId}`);
+            const summary = buildResultSummary(entry.marks, subjectRows);
+            batch.set(doc(db, `${BASE_PATH}/examResults`, docId), {
+                id: docId,
+                examId,
+                schemaId: currentExamSchema.id,
+                examKey: currentExamContext?.key || '',
+                examType: currentExamContext?.key || '',
+                examLabel: currentExamContext?.label || '',
+                classLabel: className,
+                academicYear: currentAcademicYear || '',
+                studentId: entry.studentId,
+                marks: entry.marks,
+                attendance: entry.attendance,
+                grades: summary.grades,
+                totals: summary.totals,
+                showMarksToStudents: true,
+                updatedAt: Date.now(),
+                published: false
+            }, { merge: true });
+        });
+        await batch.commit();
+        const progressPct = Math.round(50 + ((i + chunk.length) / payloads.length) * 48);
+        updateBulkStatus(`Saving to database (${Math.min(i + chunkSize, payloads.length)} of ${payloads.length})...`, progressPct);
+    }
+
     updateBulkStatus(`Uploaded ${payloads.length} row(s) successfully as draft.`, 100, 'success');
-    document.getElementById('marks-bulk-file').value = '';
+    const bulkFileInput = document.getElementById('marks-bulk-file');
+    if (bulkFileInput) bulkFileInput.value = '';
     loadMarksTable();
+
+    await showAppAlert({
+        title: 'Marks Uploaded Successfully',
+        message: `Successfully uploaded ${payloads.length} student result(s) into Draft.\n\n• Class: ${className}\n• Exam: ${currentExamContext?.label || examId}\n• Status: Ready in Draft Review`,
+        type: 'success'
+    });
 };
 
 document.getElementById('entry-exam-select').addEventListener('change', loadMarksTable);
@@ -2536,8 +2703,13 @@ const unpublishExamResults = async (recordId) => {
     const record = getPublishHistoryRecords().find((r) => r.id === recordId);
     if (!record) return alert('Publish record not found.');
 
-    const prompt = `Are you sure you want to unpublish results for "${record.examLabel || record.examKey}" (${record.academicYear})?\n\nThis will move all published marks back to Draft and hide them from students and report cards.`;
-    if (!confirm(prompt)) return;
+    const ok = await showAppConfirm({
+        title: 'Unpublish Examination Results',
+        message: `Are you sure you want to unpublish results for "${record.examLabel || record.examKey}" (${record.academicYear})?\n\nThis will move all published marks back to Draft and hide them from students and report cards.`,
+        confirmText: 'Revert to Draft',
+        type: 'warning'
+    });
+    if (!ok) return;
 
     await withBusyButton(null, 'Unpublishing...', async () => {
         const rowsToUnpublish = examResultsCache.filter((row) => {
@@ -2606,7 +2778,13 @@ const deletePublishRecord = async (recordId) => {
     const record = getPublishHistoryRecords().find((r) => r.id === recordId);
     if (!record) return;
 
-    if (!confirm(`Remove "${record.examLabel || record.examKey}" from publish history?\n\nThis will also unpublish its results and revert them back to Draft.`)) return;
+    const ok = await showAppConfirm({
+        title: 'Remove Publish Record',
+        message: `Remove "${record.examLabel || record.examKey}" from publish history?\n\nThis will also unpublish its results and revert them back to Draft.`,
+        confirmText: 'Remove & Revert',
+        type: 'danger'
+    });
+    if (!ok) return;
 
     const rowsToUnpublish = examResultsCache.filter((row) => {
         if (row.published !== true) return false;
@@ -2693,7 +2871,13 @@ const runPublishAction = async () => {
         actionPrompt = `Notice: "${title} (${publishAcademicYear})" is already published.\n\nDo you want to re-publish and update this record with current drafts and settings?`;
     }
 
-    if (!confirm(actionPrompt)) return;
+    const ok = await showAppConfirm({
+        title: isNow ? 'Publish Results Now' : 'Schedule Result Publishing',
+        message: actionPrompt,
+        confirmText: isNow ? 'Publish Now' : 'Save Schedule',
+        type: 'warning'
+    });
+    if (!ok) return;
 
     await withBusyButton('run-publish-action-btn', isNow ? 'Publishing...' : 'Saving Schedule...', async () => {
         let history = Array.isArray(resultCenterSettings.publishHistory) ? [...resultCenterSettings.publishHistory] : [];
@@ -2974,8 +3158,15 @@ document.getElementById('save-exam-config-btn')?.addEventListener('click', async
             subjects: selectedSubjects.length ? selectedSubjects : subjectRows.map((subject) => subject.id),
             showMarksToStudents: true
         };
-    });
-    if (!Object.keys(nextConfigs).length && !confirm('No additional exams entered. Save with only default exams?')) return;
+    if (!Object.keys(nextConfigs).length) {
+        const ok = await showAppConfirm({
+            title: 'Save Default Terminal Exams Only',
+            message: 'No additional custom exams entered. Would you like to save this class with only the 3 default terminal examinations (Quarterly, Half-Yearly, Annual)?',
+            confirmText: 'Save Default Exams',
+            type: 'info'
+        });
+        if (!ok) return;
+    }
     const docId = `${currentAcademicYear}_${classLabel}`.replace(/[^\w-]/g, '_');
     await withBusyButton('save-exam-config-btn', 'Saving...', async () => {
         await setDoc(doc(db, `${BASE_PATH}/resultSchemas`, docId), {
@@ -3020,11 +3211,18 @@ document.getElementById('exam-list-container')?.addEventListener('click', async 
         const examKey = customExamDeleteBtn.dataset.examKey || '';
         if (!schema || !examKey) return;
         const examLabel = schema.examConfigs?.[examKey]?.label || examKey;
-        if (!confirm(`Delete exam "${examLabel}" from ${schema.classLabel}? Existing marks for this exam will remain in Draft/Published lists until deleted separately.`)) return;
+        const ok = await showAppConfirm({
+            title: 'Delete Custom Exam',
+            message: `Delete exam "${examLabel}" from ${schema.classLabel}?\n\nExisting marks for this exam will remain in Draft/Published lists until deleted separately.`,
+            confirmText: 'Delete Exam',
+            type: 'danger'
+        });
+        if (!ok) return;
         const nextConfigs = getCustomExamConfigs(schema.examConfigs || {});
         delete nextConfigs[examKey];
         await updateDoc(doc(db, `${BASE_PATH}/resultSchemas`, schema.id), { examConfigs: nextConfigs, updatedAt: Date.now() });
         renderExamConfigRowsForSelectedClass();
+        showToast(`Exam "${examLabel}" deleted`, 'success');
         return;
     }
     const editBtn = event.target.closest('.schema-edit-btn');
@@ -3055,8 +3253,15 @@ document.getElementById('exam-list-container')?.addEventListener('click', async 
     if (delBtn) {
         const schema = resultSchemas.find((entry) => entry.id === delBtn.dataset.id);
         const label = schema ? schema.classLabel : 'this class';
-        if (!confirm(`Are you sure you want to delete subjects and custom exam schema for ${label}?`)) return;
+        const ok = await showAppConfirm({
+            title: 'Delete Class Schema',
+            message: `Are you sure you want to delete subjects and custom exam schema for ${label}? All configured evaluation criteria for this class will be removed.`,
+            confirmText: 'Delete Schema',
+            type: 'danger'
+        });
+        if (!ok) return;
         await deleteDoc(doc(db, `${BASE_PATH}/resultSchemas`, delBtn.dataset.id));
+        showToast(`Schema for ${label} deleted`, 'success');
     }
 });
 
@@ -3624,7 +3829,13 @@ document.getElementById('start-snapshot-import-btn')?.addEventListener('click', 
         `• Conflict Mode: ${importMode === 'replace' ? 'CLEAN OVERWRITE (Deletes existing results for this year)' : 'MERGE & UPDATE'}\n\n` +
         `Proceed with database restore?`;
 
-    if (!confirm(confirmMsg)) return;
+    const ok = await showAppConfirm({
+        title: 'Restore / Import Snapshot',
+        message: confirmMsg,
+        confirmText: 'Restore Snapshot',
+        type: importMode === 'replace' ? 'danger' : 'warning'
+    });
+    if (!ok) return;
 
     const progressContainer = document.getElementById('snapshot-import-progress-container');
     const progressBar = document.getElementById('snapshot-import-progress-bar');
@@ -3749,7 +3960,13 @@ document.getElementById('run-auto-promotion-btn')?.addEventListener('click', asy
         if (fromCls) classTargetMap[fromCls] = toCls;
     });
 
-    if (!confirm(`Annual published results found: ${annualRows.length}. Run auto promotion into academic year ${targetAcademicYear}?`)) return;
+    const ok = await showAppConfirm({
+        title: 'Run Automatic Student Promotion',
+        message: `Annual published results found: ${annualRows.length}.\n\nRun automatic promotion into academic year ${targetAcademicYear}? Eligible passed students will advance to their next configured classes.`,
+        confirmText: 'Run Promotion',
+        type: 'info'
+    });
+    if (!ok) return;
 
     const updates = [];
     const promotionDecisions = [];
@@ -4393,7 +4610,20 @@ const handleResultRowAction = async (event, expectedPublished = false) => {
         const publish = targetBtn.dataset.next === 'published';
         await updateDoc(doc(db, `${BASE_PATH}/examResults`, targetBtn.dataset.id), { published: publish, publishedAt: publish ? Date.now() : null, updatedAt: Date.now() });
     }
-    if (deleteBtn && confirm(expectedPublished ? 'Delete this published result?' : 'Delete this draft?')) await deleteDoc(doc(db, `${BASE_PATH}/examResults`, deleteBtn.dataset.id));
+    if (deleteBtn) {
+        const ok = await showAppConfirm({
+            title: expectedPublished ? 'Delete Published Result' : 'Delete Draft Result',
+            message: expectedPublished
+                ? 'Are you sure you want to permanently delete this published result record?'
+                : 'Are you sure you want to permanently delete this draft result record?',
+            confirmText: 'Delete Record',
+            type: 'danger'
+        });
+        if (ok) {
+            await deleteDoc(doc(db, `${BASE_PATH}/examResults`, deleteBtn.dataset.id));
+            showToast('Result deleted successfully', 'success');
+        }
+    }
 };
 document.getElementById('result-edit-cancel')?.addEventListener('click', closeResultEditModal);
 document.getElementById('result-edit-save')?.addEventListener('click', saveResultEditModal);
@@ -4426,7 +4656,13 @@ document.getElementById('published-bulk-unpublish-btn')?.addEventListener('click
     if (roleScope !== 'admin') return;
     const ids = Array.from(document.querySelectorAll('.published-select-checkbox:checked')).map((el) => el.value);
     if (!ids.length) return alert('Select at least one published result.');
-    if (!confirm(`Move ${ids.length} published result(s) back to draft?`)) return;
+    const ok = await showAppConfirm({
+        title: 'Revert Results to Draft',
+        message: `Move ${ids.length} selected published result(s) back to draft? They will no longer be visible on student portals.`,
+        confirmText: 'Move to Draft',
+        type: 'warning'
+    });
+    if (!ok) return;
     await withBusyButton('published-bulk-unpublish-btn', 'Moving to Draft...', async () => {
         await Promise.all(ids.map((id) => updateDoc(doc(db, `${BASE_PATH}/examResults`, id), { published: false, publishedAt: null, updatedAt: Date.now() })));
         notify(`Moved ${ids.length} result(s) back to draft.`);
@@ -4436,7 +4672,13 @@ document.getElementById('published-bulk-delete-btn')?.addEventListener('click', 
     if (roleScope !== 'admin') return;
     const ids = Array.from(document.querySelectorAll('.published-select-checkbox:checked')).map((el) => el.value);
     if (!ids.length) return alert('Select at least one result.');
-    if (!confirm(`Delete ${ids.length} published result(s)?`)) return;
+    const ok = await showAppConfirm({
+        title: 'Delete Published Results',
+        message: `Permanently delete ${ids.length} selected published result(s)? This action cannot be reversed.`,
+        confirmText: 'Delete Selected',
+        type: 'danger'
+    });
+    if (!ok) return;
     await withBusyButton('published-bulk-delete-btn', 'Deleting...', async () => {
         await Promise.all(ids.map((id) => deleteDoc(doc(db, `${BASE_PATH}/examResults`, id))));
         notify(`Deleted ${ids.length} published result(s).`);
@@ -4455,7 +4697,13 @@ document.getElementById('draft-bulk-delete-btn')?.addEventListener('click', asyn
     if (roleScope !== 'admin') return;
     const ids = Array.from(document.querySelectorAll('.draft-select-checkbox:checked')).map((el) => el.value);
     if (!ids.length) return alert('Select at least one draft result.');
-    if (!confirm(`Delete ${ids.length} draft result(s)?`)) return;
+    const ok = await showAppConfirm({
+        title: 'Delete Draft Results',
+        message: `Permanently delete ${ids.length} selected draft result(s)?`,
+        confirmText: 'Delete Selected',
+        type: 'danger'
+    });
+    if (!ok) return;
     await withBusyButton('draft-bulk-delete-btn', 'Deleting...', async () => {
         await Promise.all(ids.map((id) => deleteDoc(doc(db, `${BASE_PATH}/examResults`, id))));
         notify(`Deleted ${ids.length} draft result(s).`);
@@ -4601,12 +4849,19 @@ document.getElementById('mark-fill-absent-btn')?.addEventListener('click', () =>
     }
 });
 
-document.getElementById('mark-clear-btn')?.addEventListener('click', () => {
-    if (!confirm('Are you sure you want to clear all entered marks in this table?')) return;
+document.getElementById('mark-clear-btn')?.addEventListener('click', async () => {
+    const ok = await showAppConfirm({
+        title: 'Clear Marks Table',
+        message: 'Are you sure you want to clear all entered marks in this table? Any unsaved edits will be lost.',
+        confirmText: 'Clear Marks',
+        type: 'warning'
+    });
+    if (!ok) return;
     document.querySelectorAll('#marks-table-body .mark-input').forEach((input) => {
         input.value = '';
     });
     validateMarksTable();
+    showToast('Marks table cleared', 'info');
 });
 
 document.getElementById('grade-scale-total-input')?.addEventListener('change', (e) => {
