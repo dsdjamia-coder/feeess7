@@ -227,6 +227,16 @@ import { signInAnonymously, onAuthStateChanged, signInWithEmailAndPassword } fro
       const date = new Date(value);
       return Number.isNaN(date.getTime()) ? String(value) : date.toLocaleDateString('en-GB');
     };
+    const formatDateIfIso = (val = '') => {
+      if (!val) return '--';
+      const str = String(val).trim();
+      if (!str || str === '--') return '--';
+      if (/^\d{4}-\d{2}-\d{2}$/.test(str)) {
+        const [y, m, d] = str.split('-');
+        return `${d}/${m}/${y}`;
+      }
+      return str;
+    };
     const valueToDisplay = (value) => {
       if (value === undefined || value === null || value === '') return '';
       if (Array.isArray(value)) return value.map(valueToDisplay).join(', ');
@@ -310,6 +320,12 @@ import { signInAnonymously, onAuthStateChanged, signInWithEmailAndPassword } fro
       if (target === 'export') {
           renderExportTab();
           setupExcelEngine();
+      } else if (target === 'students') {
+          renderStudents();
+      } else if (target === 'staff') {
+          renderStaffTab();
+      } else if (target === 'summary') {
+          buildClassSummary();
       }
     };
 
@@ -621,14 +637,7 @@ import { signInAnonymously, onAuthStateChanged, signInWithEmailAndPassword } fro
         }
         return '';
       };
-      const formatDateIfIso = (val = '') => {
-        if (!val) return '--';
-        if (/^\d{4}-\d{2}-\d{2}$/.test(val)) {
-          const [y, m, d] = val.split('-');
-          return `${d}/${m}/${y}`;
-        }
-        return val;
-      };
+
 
       const group = getStudentGroup(student.id);
       const status = getStudentStatus(student);
