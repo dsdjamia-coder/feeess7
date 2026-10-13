@@ -617,20 +617,31 @@ const denyResultAccess = () => {
     document.getElementById('page-content').classList.add('hidden');
 };
 const applyRoleTabVisibility = () => {
-    // Only toggle nav items and controls, NOT .page-content sections which are controlled by tab router
+    // Toggle nav items, subpanels, and controls scoped to admin-only
     const adminOnlyNavItems = Array.from(document.querySelectorAll('[data-role-scope="admin-only"]:not(.page-content)'));
     adminOnlyNavItems.forEach((item) => item.classList.toggle('hidden', roleScope !== 'admin'));
 
     if (roleScope !== 'admin') {
-        const adminSections = document.querySelectorAll('.page-content[data-role-scope="admin-only"]');
+        const adminSections = document.querySelectorAll('.page-content[data-role-scope="admin-only"], .settings-subpanel[data-role-scope="admin-only"]');
         adminSections.forEach((sec) => sec.classList.add('hidden'));
 
         const activeTab = document.querySelector('.tab-link.active');
         const activeTarget = activeTab?.dataset?.target || '';
-        const blockedTargets = new Set(['settings-page', 'published-page', 'report-cards-page', 'snapshot-page']);
+        const blockedTargets = new Set(['published-page', 'report-cards-page', 'snapshot-page']);
         if (blockedTargets.has(activeTarget)) {
             const dashboardLink = document.querySelector('.tab-link[data-target="dashboard-page"]');
             dashboardLink?.click();
+        }
+
+        // If settings page is active, ensure a teacher-accessible subpanel is visible
+        const settingsPage = document.getElementById('settings-page');
+        if (settingsPage && !settingsPage.classList.contains('hidden')) {
+            const activeSubpanel = document.querySelector('.settings-subpanel:not(.hidden)');
+            if (!activeSubpanel || activeSubpanel.id === 'subpanel-publish' || activeSubpanel.id === 'subpanel-promotion') {
+                if (typeof activateSettingsSubpanel === 'function') {
+                    activateSettingsSubpanel('subpanel-subjects');
+                }
+            }
         }
     }
 };
@@ -718,7 +729,8 @@ window.addEventListener('hashchange', () => {
             pages.forEach(p => p.classList.add('hidden'));
             settingsPage.classList.remove('hidden');
             if (typeof activateSettingsSubpanel === 'function') {
-                activateSettingsSubpanel('subpanel-publish');
+                const defaultSub = (roleScope === 'admin') ? 'subpanel-publish' : 'subpanel-subjects';
+                activateSettingsSubpanel(defaultSub);
             }
             return;
         }
@@ -757,7 +769,8 @@ if (window.location.hash) {
             pages.forEach(p => p.classList.add('hidden'));
             settingsPage.classList.remove('hidden');
             if (typeof activateSettingsSubpanel === 'function') {
-                activateSettingsSubpanel('subpanel-publish');
+                const defaultSub = (roleScope === 'admin') ? 'subpanel-publish' : 'subpanel-subjects';
+                activateSettingsSubpanel(defaultSub);
             }
         }
     } else {
@@ -1488,18 +1501,39 @@ const populateDropdowns = () => {
         updateMarksDownloadAndUploadState();
     }
 
-    [reportClassSelect, subjectClassSelect, examConfigClassSelect].forEach((select) => {
+    if (reportClassSelect) {
+        const current = reportClassSelect.value;
+        reportClassSelect.innerHTML = allClassOpts;
+        if (current && classes.includes(current)) reportClassSelect.value = current;
+    }
+
+    const subjectClassOpts = `<option value="">-- Choose Class --</option>` + teacherAllowedClasses.map(c => `<option value="${escapeHtml(c)}">${escapeHtml(c)}</option>`).join('');
+
+    [subjectClassSelect, examConfigClassSelect].forEach((select) => {
         if (!select) return;
         const current = select.value;
-        select.innerHTML = allClassOpts;
-        if (current && classes.includes(current)) select.value = current;
+        select.innerHTML = subjectClassOpts;
+        if (teacherAllowedClasses.length === 1) {
+            select.value = teacherAllowedClasses[0];
+        } else if (current && teacherAllowedClasses.includes(current)) {
+            select.value = current;
+        }
     });
 
     const schemaListClassFilter = document.getElementById('schema-list-class-filter');
     if (schemaListClassFilter) {
         const currentFilter = schemaListClassFilter.value;
-        schemaListClassFilter.innerHTML = `<option value="">All Classes</option>` + classes.map(c => `<option value="${escapeHtml(c)}">${escapeHtml(c)}</option>`).join('');
-        if (currentFilter && classes.includes(currentFilter)) schemaListClassFilter.value = currentFilter;
+        const filterOpts = isTeacherScope
+            ? (teacherAllowedClasses.length === 1
+                ? teacherAllowedClasses.map(c => `<option value="${escapeHtml(c)}">${escapeHtml(c)}</option>`).join('')
+                : `<option value="">All My Classes</option>` + teacherAllowedClasses.map(c => `<option value="${escapeHtml(c)}">${escapeHtml(c)}</option>`).join(''))
+            : `<option value="">All Classes</option>` + classes.map(c => `<option value="${escapeHtml(c)}">${escapeHtml(c)}</option>`).join('');
+        schemaListClassFilter.innerHTML = filterOpts;
+        if (teacherAllowedClasses.length === 1 && isTeacherScope) {
+            schemaListClassFilter.value = teacherAllowedClasses[0];
+        } else if (currentFilter && teacherAllowedClasses.includes(currentFilter)) {
+            schemaListClassFilter.value = currentFilter;
+        }
     }
     renderExamConfigRowsForSelectedClass();
     renderExamSetup();
@@ -1955,9 +1989,11 @@ const buildSubjectRowHtml = (row = {}) => {
 const renderExamSetup = () => {
     const cont = document.getElementById('exam-list-container');
     if (!cont) return;
+    const isTeacherScope = (roleScope === 'staff' && teacherAssignedClasses.length > 0);
     const classFilter = document.getElementById('schema-list-class-filter')?.value || '';
     const filtered = resultSchemas
         .filter((s) => s.academicYear === currentAcademicYear || !s.academicYear)
+        .filter((s) => !isTeacherScope || teacherAssignedClasses.includes(s.classLabel))
         .filter((s) => !classFilter || s.classLabel === classFilter);
     
     if (filtered.length === 0) {
@@ -3678,6 +3714,10 @@ document.getElementById('save-subject-schema-btn')?.addEventListener('click', as
     if (!hasResultAccess) return alert('You do not have access to save schema.');
     const classLabel = document.getElementById('subject-class-select').value;
     if (!classLabel) return alert('Select class.');
+    const isTeacherScope = (roleScope === 'staff' && teacherAssignedClasses.length > 0);
+    if (isTeacherScope && !teacherAssignedClasses.includes(classLabel)) {
+        return alert('You can only configure subjects for your assigned class (' + teacherAssignedClasses.join(', ') + ').');
+    }
     if (!currentAcademicYear) return alert('Set the current academic year first.');
     const subjectRows = Array.from(document.querySelectorAll('#subject-rows-body .subject-row')).map((rowEl, index) => {
         const name = rowEl.querySelector('.subject-name-input')?.value?.trim() || '';
@@ -3722,6 +3762,10 @@ document.getElementById('save-exam-config-btn')?.addEventListener('click', async
     if (!hasResultAccess) return alert('You do not have access to save exams.');
     const classLabel = document.getElementById('exam-config-class-select')?.value || '';
     if (!classLabel) return alert('Select class.');
+    const isTeacherScope = (roleScope === 'staff' && teacherAssignedClasses.length > 0);
+    if (isTeacherScope && !teacherAssignedClasses.includes(classLabel)) {
+        return alert('You can only configure exams for your assigned class (' + teacherAssignedClasses.join(', ') + ').');
+    }
     if (!currentAcademicYear) return alert('Set the current academic year first.');
     const schema = getSelectedSchemaForExamConfig();
     if (!schema) return alert('Save subjects for this class first.');
@@ -3780,6 +3824,10 @@ document.getElementById('exam-list-container')?.addEventListener('click', async 
     if (customExamEditBtn) {
         const schema = resultSchemas.find((entry) => entry.id === customExamEditBtn.dataset.schemaId);
         if (!schema) return;
+        const isTeacherScope = (roleScope === 'staff' && teacherAssignedClasses.length > 0);
+        if (isTeacherScope && !teacherAssignedClasses.includes(schema.classLabel)) {
+            return alert('You can only edit custom exams for your assigned class.');
+        }
         document.querySelector('.setup-mode-radio[value="exams"]')?.click();
         const classSelect = document.getElementById('exam-config-class-select');
         if (classSelect) classSelect.value = schema.classLabel || '';
@@ -3794,6 +3842,10 @@ document.getElementById('exam-list-container')?.addEventListener('click', async 
         const schema = resultSchemas.find((entry) => entry.id === customExamDeleteBtn.dataset.schemaId);
         const examKey = customExamDeleteBtn.dataset.examKey || '';
         if (!schema || !examKey) return;
+        const isTeacherScope = (roleScope === 'staff' && teacherAssignedClasses.length > 0);
+        if (isTeacherScope && !teacherAssignedClasses.includes(schema.classLabel)) {
+            return alert('You can only delete custom exams for your assigned class.');
+        }
         const examLabel = schema.examConfigs?.[examKey]?.label || examKey;
         const ok = await showAppConfirm({
             title: 'Delete Custom Exam',
@@ -3813,6 +3865,10 @@ document.getElementById('exam-list-container')?.addEventListener('click', async 
     if (editBtn) {
         const schema = resultSchemas.find((entry) => entry.id === editBtn.dataset.id);
         if (!schema) return;
+        const isTeacherScope = (roleScope === 'staff' && teacherAssignedClasses.length > 0);
+        if (isTeacherScope && !teacherAssignedClasses.includes(schema.classLabel)) {
+            return alert('You can only edit subjects for your assigned class.');
+        }
         const classSelect = document.getElementById('subject-class-select');
         if (classSelect) classSelect.value = schema.classLabel || '';
         document.querySelector('.setup-mode-radio[value="subjects"]')?.click();
@@ -3824,6 +3880,10 @@ document.getElementById('exam-list-container')?.addEventListener('click', async 
     if (configExamsBtn) {
         const schema = resultSchemas.find((entry) => entry.id === configExamsBtn.dataset.id);
         if (!schema) return;
+        const isTeacherScope = (roleScope === 'staff' && teacherAssignedClasses.length > 0);
+        if (isTeacherScope && !teacherAssignedClasses.includes(schema.classLabel)) {
+            return alert('You can only configure exams for your assigned class.');
+        }
         document.querySelector('.setup-mode-radio[value="exams"]')?.click();
         const classSelect = document.getElementById('exam-config-class-select');
         if (classSelect) {
@@ -3836,6 +3896,10 @@ document.getElementById('exam-list-container')?.addEventListener('click', async 
     const delBtn = event.target.closest('.schema-delete-btn');
     if (delBtn) {
         const schema = resultSchemas.find((entry) => entry.id === delBtn.dataset.id);
+        const isTeacherScope = (roleScope === 'staff' && teacherAssignedClasses.length > 0);
+        if (isTeacherScope && !teacherAssignedClasses.includes(schema?.classLabel)) {
+            return alert('You can only delete schema for your assigned class.');
+        }
         const label = schema ? schema.classLabel : 'this class';
         const ok = await showAppConfirm({
             title: 'Delete Class Schema',
@@ -4001,7 +4065,7 @@ document.getElementById('grade-rules-rows')?.addEventListener('click', (event) =
 });
 
 document.getElementById('save-grade-rules-btn')?.addEventListener('click', async () => {
-    if (roleScope !== 'admin') return alert('Only administrators can configure grade rules.');
+    if (!hasResultAccess) return alert('You do not have permission to configure grade rules.');
     const totalInput = document.getElementById('grade-scale-total-input');
     const total = Number(totalInput?.value || 100);
     if (!Number.isFinite(total) || total <= 0) return alert('Please enter a valid total mark greater than 0.');
@@ -5484,7 +5548,11 @@ const activateSettingsSubpanel = (subtabId) => {
         }
     }
 
-    if (!subtabId) subtabId = 'subpanel-publish';
+    if (roleScope !== 'admin' && (subtabId === 'subpanel-publish' || subtabId === 'subpanel-promotion')) {
+        subtabId = 'subpanel-subjects';
+    }
+
+    if (!subtabId) subtabId = (roleScope === 'admin') ? 'subpanel-publish' : 'subpanel-subjects';
     
     // Hide all subpanels and show target
     document.querySelectorAll('.settings-subpanel').forEach((panel) => {
@@ -5554,7 +5622,10 @@ document.querySelectorAll('.settings-nav-link').forEach((link) => {
             window.scrollTo({ top: 0, left: 0, behavior: 'instant' });
             document.body.classList.remove('modal-scroll-lock');
             
-            const subtabId = link.dataset.subtab || 'subpanel-publish';
+            let subtabId = link.dataset.subtab || 'subpanel-publish';
+            if (roleScope !== 'admin' && (subtabId === 'subpanel-publish' || subtabId === 'subpanel-promotion')) {
+                subtabId = 'subpanel-subjects';
+            }
             activateSettingsSubpanel(subtabId);
             
             if (link.getAttribute('href')?.startsWith('#')) {

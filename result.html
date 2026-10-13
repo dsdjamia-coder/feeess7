@@ -80,17 +80,17 @@
                 <li data-role-scope="admin-only"><a href="#report-cards" class="nav-link tab-link" data-target="report-cards-page"><i class="fas fa-id-card text-lg w-6"></i> Report Cards</a></li>
                 <li data-role-scope="admin-only"><a href="#snapshot" class="nav-link tab-link" data-target="snapshot-page"><i class="fas fa-file-export text-lg w-6"></i> Snapshot Export</a></li>
                 
-                <!-- Category 3: Settings & Setup (Admin only) -->
-                <li data-role-scope="admin-only" class="mt-2 border-t border-slate-100 pt-2">
+                <!-- Category 3: Settings & Setup -->
+                <li class="mt-2 border-t border-slate-100 pt-2">
                     <div class="text-[10px] uppercase tracking-wider text-slate-400 font-bold px-3 pb-1 flex items-center justify-between">
                         <span>Settings & Setup</span>
                         <i class="fas fa-sliders-h text-slate-300"></i>
                     </div>
                     <ul class="space-y-1 mt-1 border-l-2 border-indigo-100 ml-3 pl-1">
-                        <li><a href="#settings-publish" class="nav-link settings-nav-link text-xs font-semibold py-1.5" data-target="settings-page" data-subtab="subpanel-publish"><i class="fas fa-bullhorn text-sm w-5 text-indigo-500"></i> Publish Controls</a></li>
+                        <li data-role-scope="admin-only"><a href="#settings-publish" class="nav-link settings-nav-link text-xs font-semibold py-1.5" data-target="settings-page" data-subtab="subpanel-publish"><i class="fas fa-bullhorn text-sm w-5 text-indigo-500"></i> Publish Controls</a></li>
                         <li><a href="#settings-subjects" class="nav-link settings-nav-link text-xs font-semibold py-1.5" data-target="settings-page" data-subtab="subpanel-subjects"><i class="fas fa-book text-sm w-5 text-indigo-500"></i> Subjects & Exams</a></li>
                         <li><a href="#settings-grades" class="nav-link settings-nav-link text-xs font-semibold py-1.5" data-target="settings-page" data-subtab="subpanel-grades"><i class="fas fa-list-check text-sm w-5 text-indigo-500"></i> Grade Rules</a></li>
-                        <li><a href="#settings-promotion" class="nav-link settings-nav-link text-xs font-semibold py-1.5" data-target="settings-page" data-subtab="subpanel-promotion"><i class="fas fa-arrow-up text-sm w-5 text-indigo-500"></i> Class Promotion</a></li>
+                        <li data-role-scope="admin-only"><a href="#settings-promotion" class="nav-link settings-nav-link text-xs font-semibold py-1.5" data-target="settings-page" data-subtab="subpanel-promotion"><i class="fas fa-arrow-up text-sm w-5 text-indigo-500"></i> Class Promotion</a></li>
                     </ul>
                 </li>
                 
@@ -563,8 +563,8 @@
                 </div>
             </section>
 
-            <!-- 5. Settings & Setup (Admin Only) -->
-            <section id="settings-page" class="page-content hidden" data-role-scope="admin-only">
+            <!-- 5. Settings & Setup -->
+            <section id="settings-page" class="page-content hidden">
                 <div class="card p-5 sm:p-6 shadow-sm mb-6">
                     <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2 mb-4 border-b pb-3">
                         <div>
@@ -586,7 +586,7 @@
                     </div>
 
                     <!-- Sub-Panel 1: Publish Controls -->
-                    <div id="subpanel-publish" class="settings-subpanel space-y-6">
+                    <div id="subpanel-publish" class="settings-subpanel space-y-6" data-role-scope="admin-only">
                         <!-- Main Publish Control Card -->
                         <div class="card p-5 sm:p-6 shadow-sm border border-slate-200">
                             <div class="border-b pb-4 mb-5">
@@ -750,7 +750,7 @@
                                     </div>
                                 </div>
 
-                                <button type="button" id="open-carryforward-modal-btn" class="inline-flex items-center justify-center gap-2 px-3.5 py-2 rounded-xl text-xs font-bold text-amber-900 bg-amber-50 hover:bg-amber-100 border border-amber-200/90 shadow-xs transition cursor-pointer self-start md:self-auto">
+                                <button type="button" id="open-carryforward-modal-btn" data-role-scope="admin-only" class="inline-flex items-center justify-center gap-2 px-3.5 py-2 rounded-xl text-xs font-bold text-amber-900 bg-amber-50 hover:bg-amber-100 border border-amber-200/90 shadow-xs transition cursor-pointer self-start md:self-auto">
                                     <i class="fas fa-history text-amber-600"></i>
                                     <span>Carry Forward Previous Year Subjects</span>
                                 </button>
