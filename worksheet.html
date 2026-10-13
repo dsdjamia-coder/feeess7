@@ -282,8 +282,16 @@
     .official-student-card{display:none;margin-bottom:10px}
     .official-profile-card{width:100%;min-height:auto}
     
-    @media (max-width: 767px){.official-mobile-card-list{display:block}.official-student-card{display:block}.official-tab table{font-size:11px}}
-    @media (min-width: 768px){.official-mobile-card-list{display:none}}
+    @media (max-width: 767px){
+      .stu-reg-scroll-wrap{ display: none !important; }
+      .official-mobile-card-list{ display: block !important; }
+      .official-student-card{ display: flex !important; }
+      .official-tab table{ font-size: 11px; }
+    }
+    @media (min-width: 768px){
+      .stu-reg-scroll-wrap{ display: block !important; }
+      .official-mobile-card-list{ display: none !important; }
+    }
     
     .official-me-card{background:linear-gradient(135deg,#4f46e5 0%,#7c3aed 45%,#ec4899 100%);border:1px solid rgba(255,255,255,.35)}
     .official-me-hero{background:radial-gradient(circle at top left,rgba(255,255,255,.28),transparent 35%),radial-gradient(circle at bottom right,rgba(34,211,238,.26),transparent 38%)}

@@ -650,149 +650,173 @@ import { signInAnonymously, onAuthStateChanged, signInWithEmailAndPassword } fro
 
       const hasIndividualConc = hasStudentConcession(student);
       const concText = group
-        ? (hasIndividualConc ? `₹${student.concessionFee}/mo (Group: ₹${group.fee || 0}/mo)` : `Group Rate: ₹${group.fee || 0}/mo`)
-        : (hasIndividualConc ? `₹${student.concessionFee}/month` : 'None (Standard Rate)');
+        ? (hasIndividualConc ? `₹${student.concessionFee}/month (Group: ₹${group.fee || 0}/month)` : `Group Standard Rate: ₹${group.fee || 0}/month`)
+        : (hasIndividualConc ? `₹${student.concessionFee}/month` : 'Standard Rate (No Concession)');
 
-      const hiddenDetailKeys = new Set([
-        'id', 'photo', 'image', 'photoUrl', 'photo_url', 'avatar', 'logo',
-        'profile', 'concessionUpdatedAt', 'concessionAppliedBy', 'concession_updated_at', 'concession_applied_by',
-        'academicYears', 'academicYear', 'isActive', 'left', 'createdAt', 'updatedAt',
-        'class', 'studentClass', 'uid', 'name', 'father', 'guardian', 'mother', 'gender',
-        'adm', 'admNo', 'dob', 'adm_date', 'admDate', 'status', 'adhaar', 'aadhaar', 'aadhar',
-        'mobile', 'phone', 'fatherMobile', 'motherMobile', 'mother_mobile', 'address', 'concessionFee',
-        'busStop', 'busFee', 'route'
-      ]);
-      const isHiddenDetailKey = (k = '') => {
-        if (hiddenDetailKeys.has(k)) return true;
-        const lower = String(k || '').toLowerCase().replace(/[\s_.-]+/g, '');
-        return lower === 'profile'
-          || lower === 'concessionupdatedat'
-          || lower === 'concessionupdated'
-          || lower === 'concessionappliedby'
-          || lower === 'concessionapplied';
-      };
-
-      const extraFields = Object.entries(student || {}).filter(([k, v]) => {
-        if (isHiddenDetailKey(k)) return false;
-        if (v === null || v === undefined || typeof v === 'object') return false;
-        const disp = String(valueToDisplay(v)).trim();
-        return disp !== '' && disp !== '--';
-      });
-
-      const avatarHtml = renderAvatarMarkup(student, nameVal, 'w-20 h-20 sm:w-24 sm:h-24 rounded-2xl text-2xl shadow-md border-2 border-white/25');
+      const avatarHtml = renderAvatarMarkup(student, nameVal, 'w-20 h-20 sm:w-24 sm:h-24 rounded-2xl text-2xl shadow-lg border-2 border-white/30 shrink-0');
 
       return `
         <div class="space-y-4">
-          <!-- Top Identity Banner -->
-          <div class="flex flex-col sm:flex-row items-center sm:items-center gap-4 p-4 sm:p-5 rounded-2xl bg-gradient-to-r from-slate-900 via-indigo-950 to-slate-900 text-white shadow-md border border-slate-800">
-            <div class="flex-shrink-0">
+          <!-- Top Identity Header Banner -->
+          <div class="flex flex-col sm:flex-row items-center gap-4 p-4 sm:p-5 rounded-2xl bg-gradient-to-br from-slate-900 via-indigo-950 to-blue-950 text-white shadow-xl border border-slate-800">
+            <div class="relative shrink-0">
               ${avatarHtml}
+              <span class="absolute -bottom-1 -right-1 w-5 h-5 rounded-full border-2 border-slate-900 ${isAct ? 'bg-emerald-500' : 'bg-rose-500'} flex items-center justify-center text-[9px]" title="${isAct ? 'Active Student' : 'Inactive'}">
+                <i class="fas ${isAct ? 'fa-check' : 'fa-times'} text-white"></i>
+              </span>
             </div>
             <div class="text-center sm:text-left flex-1 min-w-0">
               <div class="flex flex-wrap items-center justify-center sm:justify-start gap-2 mb-1.5">
-                <span class="px-2.5 py-0.5 rounded-full text-[11px] font-extrabold uppercase tracking-wider ${isAct ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-400/30' : 'bg-rose-500/20 text-rose-300 border border-rose-400/30'}">${escapeHtml(status)}</span>
-                <span class="px-2.5 py-0.5 rounded-lg text-[11px] font-extrabold bg-blue-600 text-white shadow-2xs">Class: ${escapeHtml(classVal)}</span>
-                <span class="px-2.5 py-0.5 rounded-lg text-[11px] font-mono font-bold bg-white/10 text-slate-100 border border-white/15">Adm No: ${escapeHtml(admVal)}</span>
+                <span class="px-2.5 py-0.5 rounded-full text-[11px] font-extrabold uppercase tracking-wider ${isAct ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-400/30' : 'bg-rose-500/20 text-rose-300 border border-rose-400/30'}">
+                  <i class="fas fa-circle text-[7px] mr-1"></i>${escapeHtml(status)}
+                </span>
+                <span class="px-2.5 py-0.5 rounded-lg text-[11px] font-extrabold bg-blue-600 text-white shadow-xs">
+                  <i class="fas fa-graduation-cap mr-1 opacity-80"></i>Class ${escapeHtml(classVal)}
+                </span>
+                <span class="px-2.5 py-0.5 rounded-lg text-[11px] font-mono font-bold bg-white/10 text-slate-100 border border-white/15">
+                  Adm: ${escapeHtml(admVal)}
+                </span>
               </div>
               <h3 class="text-xl sm:text-2xl font-black text-white leading-snug break-words">${escapeHtml(nameVal)}</h3>
-              <div class="text-xs font-semibold text-indigo-200 mt-1 flex flex-wrap items-center justify-center sm:justify-start gap-x-3 gap-y-1">
+              <div class="text-xs font-semibold text-indigo-200 mt-1.5 flex flex-wrap items-center justify-center sm:justify-start gap-x-3 gap-y-1">
                 <span><i class="fas fa-venus-mars mr-1 opacity-75"></i>Gender: <b class="text-white">${escapeHtml(genderVal)}</b></span>
-                <span>•</span>
+                <span class="opacity-50">•</span>
                 <span><i class="fas fa-fingerprint mr-1 opacity-75"></i>UID: <b class="text-white font-mono">${escapeHtml(uidVal)}</b></span>
+                <span class="opacity-50">•</span>
+                <span><i class="fas fa-calendar-alt mr-1 opacity-75"></i>DOB: <b class="text-white font-mono">${escapeHtml(dobVal)}</b></span>
               </div>
             </div>
           </div>
 
-          <!-- Complete Official Details Grid -->
-          <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 text-xs">
-            <div class="bg-slate-50/90 border border-slate-200 rounded-xl p-3">
-              <div class="text-[10px] font-extrabold uppercase tracking-wider text-slate-400">Father's Name</div>
-              <div class="font-extrabold text-slate-900 text-sm mt-0.5 break-words">${escapeHtml(fatherVal)}</div>
-            </div>
-            <div class="bg-slate-50/90 border border-slate-200 rounded-xl p-3">
-              <div class="text-[10px] font-extrabold uppercase tracking-wider text-slate-400">Mother's Name</div>
-              <div class="font-extrabold text-slate-900 text-sm mt-0.5 break-words">${escapeHtml(motherVal)}</div>
-            </div>
-            <div class="bg-slate-50/90 border border-slate-200 rounded-xl p-3">
-              <div class="text-[10px] font-extrabold uppercase tracking-wider text-slate-400">Date of Birth (DOB)</div>
-              <div class="font-extrabold font-mono text-slate-900 text-sm mt-0.5">${escapeHtml(dobVal)}</div>
-            </div>
-            <div class="bg-slate-50/90 border border-slate-200 rounded-xl p-3">
-              <div class="text-[10px] font-extrabold uppercase tracking-wider text-slate-400">Date of Admission</div>
-              <div class="font-extrabold font-mono text-slate-900 text-sm mt-0.5">${escapeHtml(admDateVal)}</div>
-            </div>
-            <div class="bg-slate-50/90 border border-slate-200 rounded-xl p-3">
-              <div class="text-[10px] font-extrabold uppercase tracking-wider text-slate-400">Aadhaar Number</div>
-              <div class="font-extrabold font-mono text-slate-900 text-sm mt-0.5">${escapeHtml(adhaarVal)}</div>
-            </div>
-            <div class="${hasIndividualConc || group ? 'bg-emerald-50/80 border-emerald-200' : 'bg-slate-50/90 border-slate-200'} border rounded-xl p-3">
-              <div class="text-[10px] font-extrabold uppercase tracking-wider ${hasIndividualConc || group ? 'text-emerald-700' : 'text-slate-400'}">Fee Concession</div>
-              <div class="font-extrabold ${hasIndividualConc || group ? 'text-emerald-900' : 'text-slate-800'} text-sm mt-0.5">${escapeHtml(concText)}</div>
-            </div>
-            <div class="bg-slate-50/90 border border-slate-200 rounded-xl p-3">
-              <div class="text-[10px] font-extrabold uppercase tracking-wider text-slate-400">Father's Phone</div>
-              <div class="flex items-center justify-between gap-2 mt-0.5">
-                <span class="font-extrabold font-mono text-slate-900 text-sm">${escapeHtml(fatherPhone || 'Not Available')}</span>
-                ${fatherPhone ? `<a href="tel:${escapeHtml(fatherPhone)}" class="px-2.5 py-1 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white text-[11px] font-bold inline-flex items-center gap-1 shadow-2xs transition"><i class="fas fa-phone-alt text-[9px]"></i> Call</a>` : ''}
+          <!-- Section 1: Academic & Enrollment Information -->
+          <div class="bg-white rounded-2xl border border-slate-200 shadow-xs p-4">
+            <h4 class="text-xs font-extrabold uppercase tracking-wider text-slate-500 mb-3 flex items-center gap-2">
+              <i class="fas fa-id-card text-blue-600"></i>
+              <span>Academic & Enrollment Information</span>
+            </h4>
+            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 text-xs">
+              <div class="p-3 rounded-xl bg-slate-50 border border-slate-200/80">
+                <span class="text-[10px] font-extrabold text-slate-400 uppercase tracking-wider block">Class / Division</span>
+                <span class="text-sm font-extrabold text-indigo-950 mt-0.5 block">${escapeHtml(classVal)}</span>
+              </div>
+              <div class="p-3 rounded-xl bg-slate-50 border border-slate-200/80">
+                <span class="text-[10px] font-extrabold text-slate-400 uppercase tracking-wider block">Admission Number</span>
+                <span class="text-sm font-extrabold font-mono text-slate-900 mt-0.5 block">${escapeHtml(admVal)}</span>
+              </div>
+              <div class="p-3 rounded-xl bg-slate-50 border border-slate-200/80">
+                <span class="text-[10px] font-extrabold text-slate-400 uppercase tracking-wider block">Date of Admission</span>
+                <span class="text-sm font-extrabold font-mono text-slate-900 mt-0.5 block">${escapeHtml(admDateVal)}</span>
+              </div>
+              <div class="p-3 rounded-xl bg-slate-50 border border-slate-200/80">
+                <span class="text-[10px] font-extrabold text-slate-400 uppercase tracking-wider block">Unique ID (UID)</span>
+                <span class="text-sm font-extrabold font-mono text-slate-900 mt-0.5 block">${escapeHtml(uidVal)}</span>
               </div>
             </div>
-            <div class="bg-slate-50/90 border border-slate-200 rounded-xl p-3">
-              <div class="text-[10px] font-extrabold uppercase tracking-wider text-slate-400">Mother's Phone</div>
-              <div class="flex items-center justify-between gap-2 mt-0.5">
-                <span class="font-extrabold font-mono text-slate-900 text-sm">${escapeHtml(motherPhone || 'Not Available')}</span>
-                ${motherPhone ? `<a href="tel:${escapeHtml(motherPhone)}" class="px-2.5 py-1 rounded-lg bg-blue-600 hover:bg-blue-700 text-white text-[11px] font-bold inline-flex items-center gap-1 shadow-2xs transition"><i class="fas fa-phone-alt text-[9px]"></i> Call</a>` : ''}
+          </div>
+
+          <!-- Section 2: Personal Details -->
+          <div class="bg-white rounded-2xl border border-slate-200 shadow-xs p-4">
+            <h4 class="text-xs font-extrabold uppercase tracking-wider text-slate-500 mb-3 flex items-center gap-2">
+              <i class="fas fa-user text-indigo-600"></i>
+              <span>Personal Details</span>
+            </h4>
+            <div class="grid grid-cols-1 sm:grid-cols-3 gap-3 text-xs">
+              <div class="p-3 rounded-xl bg-slate-50 border border-slate-200/80">
+                <span class="text-[10px] font-extrabold text-slate-400 uppercase tracking-wider block">Gender</span>
+                <span class="text-sm font-extrabold text-slate-900 mt-0.5 block flex items-center gap-1.5">
+                  <i class="fas ${genderVal.toLowerCase() === 'female' ? 'fa-female text-pink-500' : 'fa-male text-blue-500'}"></i>
+                  ${escapeHtml(genderVal)}
+                </span>
+              </div>
+              <div class="p-3 rounded-xl bg-slate-50 border border-slate-200/80">
+                <span class="text-[10px] font-extrabold text-slate-400 uppercase tracking-wider block">Date of Birth (DOB)</span>
+                <span class="text-sm font-extrabold font-mono text-slate-900 mt-0.5 block">${escapeHtml(dobVal)}</span>
+              </div>
+              <div class="p-3 rounded-xl bg-slate-50 border border-slate-200/80">
+                <span class="text-[10px] font-extrabold text-slate-400 uppercase tracking-wider block">Aadhaar Number</span>
+                <span class="text-sm font-extrabold font-mono text-slate-900 mt-0.5 block">${escapeHtml(adhaarVal)}</span>
               </div>
             </div>
-            <div class="bg-slate-50/90 border border-slate-200 rounded-xl p-3 sm:col-span-2 lg:col-span-1">
-              <div class="text-[10px] font-extrabold uppercase tracking-wider text-slate-400">Permanent Address</div>
-              <div class="font-bold text-slate-900 text-sm mt-0.5 break-words leading-relaxed">${escapeHtml(addressVal)}</div>
+          </div>
+
+          <!-- Section 3: Parent, Contact & Address -->
+          <div class="bg-white rounded-2xl border border-slate-200 shadow-xs p-4">
+            <h4 class="text-xs font-extrabold uppercase tracking-wider text-slate-500 mb-3 flex items-center gap-2">
+              <i class="fas fa-phone-alt text-emerald-600"></i>
+              <span>Parent, Contact & Address</span>
+            </h4>
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs mb-3">
+              <div class="p-3 rounded-xl bg-slate-50 border border-slate-200/80">
+                <span class="text-[10px] font-extrabold text-slate-400 uppercase tracking-wider block">Father's Name & Phone</span>
+                <div class="text-sm font-extrabold text-slate-900 mt-0.5">${escapeHtml(fatherVal)}</div>
+                <div class="flex items-center justify-between gap-2 mt-2 pt-2 border-t border-slate-200/70">
+                  <span class="font-bold font-mono text-xs text-slate-700">${escapeHtml(fatherPhone || 'No Phone')}</span>
+                  ${fatherPhone ? `<a href="tel:${escapeHtml(fatherPhone)}" class="px-2.5 py-1 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white text-[11px] font-bold inline-flex items-center gap-1 shadow-2xs transition"><i class="fas fa-phone-alt text-[9px]"></i> Call Father</a>` : ''}
+                </div>
+              </div>
+              <div class="p-3 rounded-xl bg-slate-50 border border-slate-200/80">
+                <span class="text-[10px] font-extrabold text-slate-400 uppercase tracking-wider block">Mother's Name & Phone</span>
+                <div class="text-sm font-extrabold text-slate-900 mt-0.5">${escapeHtml(motherVal)}</div>
+                <div class="flex items-center justify-between gap-2 mt-2 pt-2 border-t border-slate-200/70">
+                  <span class="font-bold font-mono text-xs text-slate-700">${escapeHtml(motherPhone || 'No Phone')}</span>
+                  ${motherPhone ? `<a href="tel:${escapeHtml(motherPhone)}" class="px-2.5 py-1 rounded-lg bg-blue-600 hover:bg-blue-700 text-white text-[11px] font-bold inline-flex items-center gap-1 shadow-2xs transition"><i class="fas fa-phone-alt text-[9px]"></i> Call Mother</a>` : ''}
+                </div>
+              </div>
             </div>
+            <div class="p-3 rounded-xl bg-slate-50 border border-slate-200/80 text-xs">
+              <span class="text-[10px] font-extrabold text-slate-400 uppercase tracking-wider block">Permanent Address</span>
+              <div class="text-sm font-bold text-slate-800 mt-1 leading-relaxed break-words flex items-start gap-2">
+                <i class="fas fa-map-marker-alt text-slate-400 mt-1"></i>
+                <span>${escapeHtml(addressVal)}</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Section 4: Fees, Concession & Sibling Group -->
+          <div class="grid grid-cols-1 ${group ? 'lg:grid-cols-2' : ''} gap-3">
+            <div class="bg-white rounded-2xl border ${hasIndividualConc || group ? 'border-emerald-200 bg-emerald-50/30' : 'border-slate-200'} p-4 shadow-xs">
+              <h4 class="text-xs font-extrabold uppercase tracking-wider ${hasIndividualConc || group ? 'text-emerald-800' : 'text-slate-500'} mb-2 flex items-center gap-2">
+                <i class="fas fa-receipt text-emerald-600"></i>
+                <span>Fee Concession Status</span>
+              </h4>
+              <div class="p-3 rounded-xl ${hasIndividualConc || group ? 'bg-emerald-50 border border-emerald-200' : 'bg-slate-50 border border-slate-200'}">
+                <div class="text-sm font-extrabold ${hasIndividualConc || group ? 'text-emerald-950' : 'text-slate-800'}">${escapeHtml(concText)}</div>
+                ${hasIndividualConc ? `<p class="text-[11px] font-semibold text-emerald-700 mt-1">Special individualized fee rate active for this student.</p>` : ''}
+              </div>
+            </div>
+
+            ${group ? `
+              <div class="bg-white rounded-2xl border border-blue-200 bg-blue-50/30 p-4 shadow-xs">
+                <div class="flex items-center justify-between gap-2 mb-2">
+                  <h4 class="text-xs font-extrabold uppercase tracking-wider text-blue-900 flex items-center gap-1.5">
+                    <i class="fas fa-users text-blue-600"></i>
+                    <span>Family / Sibling Group</span>
+                  </h4>
+                  <span class="text-[11px] font-extrabold text-blue-900 bg-white border border-blue-200 px-2.5 py-0.5 rounded-full shadow-2xs">Fee: ₹${escapeHtml(String(group.fee || 0))}/mo</span>
+                </div>
+                <div class="space-y-1.5">
+                  ${getGroupMemberRows(group).map((member, index) => {
+                    const isCurrent = member.id === student.id;
+                    return `
+                      <div class="flex items-center justify-between gap-2 rounded-xl bg-white border ${isCurrent ? 'border-blue-400 bg-blue-50/60 font-black' : 'border-blue-100'} px-3 py-2 text-xs shadow-2xs">
+                        <span class="${isCurrent ? 'font-extrabold text-blue-950' : 'font-bold text-slate-800'} truncate">${index + 1}. ${escapeHtml(member.name || '--')} ${isCurrent ? '(This Student)' : ''}</span>
+                        <div class="flex items-center gap-1.5 shrink-0">
+                          <span class="px-1.5 py-0.5 rounded bg-slate-100 text-slate-700 font-mono text-[10px] font-bold">Adm: ${escapeHtml(member.adm || '--')}</span>
+                          <span class="px-1.5 py-0.5 rounded bg-blue-50 text-blue-700 font-bold text-[10px]">Cls: ${escapeHtml(member.class || '--')}</span>
+                        </div>
+                      </div>`;
+                  }).join('')}
+                </div>
+              </div>` : ''}
           </div>
 
           ${(student.busStop || student.busFee || student.route) ? `
-            <div class="p-3.5 rounded-xl border border-amber-200 bg-amber-50/80 flex flex-wrap items-center justify-between gap-2 text-xs">
-              <div class="font-extrabold text-amber-800 uppercase tracking-wider text-[10px] flex items-center gap-1.5">
+            <div class="p-3.5 rounded-2xl border border-amber-200 bg-amber-50/80 flex flex-wrap items-center justify-between gap-2 text-xs">
+              <div class="font-extrabold text-amber-800 uppercase tracking-wider text-[11px] flex items-center gap-1.5">
                 <i class="fas fa-bus text-amber-600"></i> Transport & Bus Service
               </div>
               <div class="font-bold text-slate-900">
                 Stop: <b>${escapeHtml(student.busStop || '--')}</b> &nbsp;•&nbsp; Bus Fee: <b>₹${escapeHtml(String(student.busFee || 0))}</b> &nbsp;•&nbsp; Route: <b>${escapeHtml(student.route || '--')}</b>
-              </div>
-            </div>` : ''}
-
-          <!-- Linked Family / Sibling Group Members -->
-          ${group ? `
-            <div class="rounded-2xl border border-blue-200 bg-blue-50/70 p-3.5">
-              <div class="flex items-center justify-between gap-2 mb-2.5">
-                <span class="text-xs font-extrabold uppercase tracking-wider text-blue-900 flex items-center gap-1.5">
-                  <i class="fas fa-users text-blue-600"></i> Family / Sibling Group Members
-                </span>
-                <span class="text-xs font-extrabold text-blue-900 bg-white border border-blue-200 px-3 py-0.5 rounded-full shadow-2xs">Group Fee: ₹${escapeHtml(String(group.fee || 0))}/mo</span>
-              </div>
-              <div class="grid grid-cols-1 sm:grid-cols-2 gap-2">
-                ${getGroupMemberRows(group).map((member, index) => {
-                  const isCurrent = member.id === student.id;
-                  return `
-                    <div class="flex items-center justify-between gap-2 rounded-xl bg-white border ${isCurrent ? 'border-blue-400 bg-blue-50/40' : 'border-blue-100'} px-3 py-2 text-xs shadow-2xs">
-                      <span class="${isCurrent ? 'font-extrabold text-blue-950' : 'font-bold text-slate-800'} truncate">${index + 1}. ${escapeHtml(member.name || '--')}</span>
-                      <div class="flex items-center gap-1.5 shrink-0">
-                        <span class="px-1.5 py-0.5 rounded bg-slate-100 text-slate-700 font-mono text-[10px] font-bold">Adm: ${escapeHtml(member.adm || '--')}</span>
-                        <span class="px-1.5 py-0.5 rounded bg-blue-50 text-blue-700 font-bold text-[10px]">Cls: ${escapeHtml(member.class || '--')}</span>
-                      </div>
-                    </div>`;
-                }).join('')}
-              </div>
-            </div>` : ''}
-
-          ${extraFields.length ? `
-            <div class="rounded-2xl border border-slate-200 p-3.5 bg-white">
-              <h4 class="text-[10px] font-extrabold text-slate-400 mb-2.5 uppercase tracking-wider">Additional Custom Fields</h4>
-              <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2.5 text-xs">
-                ${extraFields.map(([k, v]) => `
-                  <div class="p-2.5 rounded-xl bg-slate-50 border border-slate-200/80">
-                    <span class="text-slate-400 font-bold block text-[10px] uppercase">${escapeHtml(toLabel(k))}</span>
-                    <span class="font-extrabold text-slate-800 mt-0.5 block break-words">${escapeHtml(valueToDisplay(v))}</span>
-                  </div>
-                `).join('')}
               </div>
             </div>` : ''}
         </div>`;
@@ -973,32 +997,14 @@ import { signInAnonymously, onAuthStateChanged, signInWithEmailAndPassword } fro
         { key: 'adhaar', label: 'Aadhaar No' },
         { key: 'mobile', label: 'Father Mobile' },
         { key: 'motherMobile', label: 'Mother Mobile' },
-        { key: 'concessionFee', label: 'Concession' },
-        { key: 'address', label: 'Address' }
+        { key: 'address', label: 'Permanent Address' },
+        { key: 'group', label: 'Group' },
+        { key: 'concessionFee', label: 'Concession' }
       ];
 
-      const hiddenSystemKeys = new Set([
-        'id', 'photo', 'image', 'photoUrl', 'photo_url', 'avatar', 'logo',
-        'profile', 'concessionUpdatedAt', 'concessionAppliedBy', 'concession_updated_at', 'concession_applied_by',
-        'academicYears', 'academicYear', 'isActive', 'left', 'admDate', 'aadhaar', 'aadhar',
-        'phone', 'fatherMobile', 'mother_mobile', 'studentClass', 'guardian', 'createdAt', 'updatedAt',
-        ...coreAdminColumns.map((c) => c.key)
-      ]);
-      const isHiddenExtraKey = (key = '') => {
-        if (hiddenSystemKeys.has(key)) return true;
-        const lower = String(key || '').toLowerCase().replace(/[\s_.-]+/g, '');
-        return lower === 'profile'
-          || lower === 'concessionupdatedat'
-          || lower === 'concessionupdated'
-          || lower === 'concessionappliedby'
-          || lower === 'concessionapplied';
-      };
-      const extraKeys = [...new Set(filteredStudents.flatMap((student) => Object.keys(student || {})))].filter((key) => !isHiddenExtraKey(key));
-
-      const headerCells = [
-        ...coreAdminColumns.map((col) => `<th class="${col.key === 'name' ? 'stu-sticky-col-3' : ''} px-2.5 py-2.5 whitespace-nowrap text-left font-extrabold text-slate-700">${escapeHtml(col.label)}</th>`),
-        ...extraKeys.map((key) => `<th class="px-2.5 py-2.5 whitespace-nowrap text-left font-extrabold text-slate-700">${escapeHtml(toLabel(key))}</th>`)
-      ].join('');
+      const headerCells = coreAdminColumns.map((col) =>
+        `<th class="${col.key === 'name' ? 'stu-sticky-col-3' : ''} px-2.5 py-2.5 whitespace-nowrap text-left font-extrabold text-slate-700">${escapeHtml(col.label)}</th>`
+      ).join('');
 
       const getStudentColValue = (student, key) => {
         const prof = (student?.profile && typeof student.profile === 'object') ? student.profile : {};
@@ -1008,12 +1014,16 @@ import { signInAnonymously, onAuthStateChanged, signInWithEmailAndPassword } fro
         if (key === 'father') return student.father || prof.father || student.guardian || '--';
         if (key === 'mother') return student.mother || prof.mother || '--';
         if (key === 'gender') return student.gender || prof.gender || '--';
-        if (key === 'dob') return student.dob || prof.dob || '--';
-        if (key === 'adm_date') return student.adm_date || student.admDate || prof.admDate || prof.adm_date || '--';
+        if (key === 'dob') return formatDateIfIso(student.dob || prof.dob || '');
+        if (key === 'adm_date') return formatDateIfIso(student.adm_date || student.admDate || prof.admDate || prof.adm_date || '');
         if (key === 'adhaar') return student.adhaar || student.aadhaar || student.aadhar || prof.adhaar || prof.aadhaar || '--';
         if (key === 'mobile') return student.mobile || student.phone || student.fatherMobile || prof.mobile || prof.phone || '--';
         if (key === 'motherMobile') return student.motherMobile || student.mother_mobile || prof.motherMobile || '--';
         if (key === 'address') return student.address || prof.address || '--';
+        if (key === 'group') {
+          const grp = getStudentGroup(student.id);
+          return grp ? `Group ₹${grp.fee || 0}` : '--';
+        }
         if (key === 'concessionFee') return hasStudentConcession(student) ? `₹${student.concessionFee}` : '--';
         const val = valueToDisplay(student?.[key] !== undefined ? student[key] : prof?.[key]);
         return val !== '' ? val : '--';
@@ -1034,36 +1044,75 @@ import { signInAnonymously, onAuthStateChanged, signInWithEmailAndPassword } fro
               return `<td class="stu-sticky-col-3 px-2.5 py-2 align-middle font-extrabold text-slate-900 whitespace-nowrap truncate" title="${escapeHtml(val)}">${escapeHtml(val)}</td>`;
             }
             if (col.key === 'class') {
-              return `<td class="px-2.5 py-2 align-middle text-center"><span class="px-2 py-0.5 rounded-md bg-indigo-50 text-indigo-700 font-bold text-xs">${escapeHtml(val)}</span></td>`;
+              return `<td class="px-2.5 py-2 align-middle text-center whitespace-nowrap"><span class="px-2 py-0.5 rounded-md bg-indigo-50 text-indigo-700 font-bold text-xs">Class ${escapeHtml(val)}</span></td>`;
             }
             if (col.key === 'status') {
-              return `<td class="px-2.5 py-2 align-middle text-center"><span class="px-2 py-0.5 rounded-full text-[11px] font-bold ${status === 'Active' ? 'bg-emerald-50 text-emerald-700 border border-emerald-200' : 'bg-rose-50 text-rose-700 border border-rose-200'}">${escapeHtml(status)}</span></td>`;
+              return `<td class="px-2.5 py-2 align-middle text-center whitespace-nowrap"><span class="px-2 py-0.5 rounded-full text-[11px] font-bold ${status === 'Active' ? 'bg-emerald-50 text-emerald-700 border border-emerald-200' : 'bg-rose-50 text-rose-700 border border-rose-200'}">${escapeHtml(status)}</span></td>`;
+            }
+            if (col.key === 'group') {
+              return `<td class="px-2.5 py-2 align-middle whitespace-nowrap text-center">${group ? `<span class="px-2 py-0.5 rounded-md bg-blue-50 text-blue-700 font-bold text-xs border border-blue-200">Group ₹${escapeHtml(String(group.fee || 0))}</span>` : '<span class="text-slate-400">--</span>'}</td>`;
+            }
+            if (col.key === 'concessionFee') {
+              return `<td class="px-2.5 py-2 align-middle whitespace-nowrap text-center">${hasStudentConcession(student) ? `<span class="px-2 py-0.5 rounded-md bg-emerald-50 text-emerald-700 font-bold text-xs border border-emerald-200">₹${escapeHtml(String(student.concessionFee))}</span>` : '<span class="text-slate-400">--</span>'}</td>`;
             }
             if (col.key === 'address') {
-              return `<td class="px-2.5 py-2 align-middle min-w-[180px] max-w-[260px] truncate" title="${escapeHtml(val)}">${escapeHtml(val)}</td>`;
+              return `<td class="px-2.5 py-2 align-middle min-w-[180px] max-w-[260px] truncate text-slate-700" title="${escapeHtml(val)}">${escapeHtml(val)}</td>`;
             }
             return `<td class="px-2.5 py-2 align-middle whitespace-nowrap text-slate-700">${escapeHtml(val)}</td>`;
           }).join('')}
-          ${extraKeys.map((key) => `<td class="px-2.5 py-2 align-middle whitespace-nowrap text-slate-700">${escapeHtml(getStudentColValue(student, key))}</td>`).join('')}
-          <td class="px-2.5 py-2 align-middle whitespace-nowrap">${group ? `<span class="badge">Group ₹${escapeHtml(String(group.fee || 0))}</span>` : '--'}</td>
         </tr>`;
       }).join('');
 
       const cardRows = paginatedStudents.map((student, idx) => {
         const serialNo = startIdx + idx + 1;
+        const group = getStudentGroup(student.id);
+        const status = getStudentStatus(student);
+        const isAct = status.toLowerCase() === 'active';
+        const prof = (student?.profile && typeof student.profile === 'object') ? student.profile : {};
+        const fatherPhone = student.mobile || student.phone || student.fatherMobile || prof.mobile || prof.phone || '';
+        const motherPhone = student.motherMobile || student.mother_mobile || prof.motherMobile || '';
+        const hasConc = hasStudentConcession(student);
+        const dobFormatted = formatDateIfIso(student.dob || prof.dob || '');
+        const admDateFormatted = formatDateIfIso(student.adm_date || student.admDate || prof.admDate || prof.adm_date || '');
         return `
-          <button type="button" class="official-student-card flex items-center gap-3 p-3.5 text-left w-full border border-slate-200 bg-white rounded-2xl shadow-xs hover:border-blue-400 hover:shadow-md transition-all mb-2" data-student-id="${escapeHtml(student.id)}">
-            <span class="w-6 text-center font-extrabold text-xs text-slate-400">${serialNo}</span>
-            ${renderAvatarMarkup(student, student.name, 'w-11 h-11 rounded-xl text-sm')}
-            <div class="flex-1 min-w-0">
-              <div class="flex items-center justify-between gap-1.5 mb-0.5">
-                <span class="font-extrabold text-slate-900 text-sm truncate">${escapeHtml(student.name || '--')}</span>
-                <span class="text-[11px] font-bold px-2 py-0.5 rounded-full bg-blue-50 text-blue-700 whitespace-nowrap">Class ${escapeHtml(student.class || '--')}</span>
+          <div class="official-student-card p-3.5 text-left w-full border border-slate-200 bg-white rounded-2xl shadow-xs hover:border-blue-400 hover:shadow-md transition-all cursor-pointer" data-student-id="${escapeHtml(student.id)}">
+            <div class="flex items-start gap-3 w-full">
+              <span class="w-6 text-center font-extrabold text-xs text-slate-400 mt-1">${serialNo}</span>
+              ${renderAvatarMarkup(student, student.name, 'w-12 h-12 rounded-xl text-sm shrink-0 border border-slate-200 shadow-2xs')}
+              <div class="flex-1 min-w-0">
+                <div class="flex items-center justify-between gap-1.5 mb-1">
+                  <span class="font-extrabold text-slate-900 text-sm truncate">${escapeHtml(student.name || '--')}</span>
+                  <span class="text-[10px] font-bold px-2 py-0.5 rounded-full ${isAct ? 'bg-emerald-50 text-emerald-700 border border-emerald-200' : 'bg-rose-50 text-rose-700 border border-rose-200'} whitespace-nowrap">${escapeHtml(status)}</span>
+                </div>
+                <div class="flex flex-wrap items-center gap-1.5 mb-2 text-xs">
+                  <span class="px-2 py-0.5 rounded-md bg-indigo-50 text-indigo-700 font-bold text-[11px]">Class ${escapeHtml(student.class || '--')}</span>
+                  <span class="text-slate-500 font-medium">Adm: <b class="text-slate-800 font-mono">${escapeHtml(student.adm || prof.admNo || '--')}</b></span>
+                  <span class="text-slate-400">•</span>
+                  <span class="text-slate-500 font-medium">UID: <b class="text-slate-800 font-mono">${escapeHtml(student.uid || prof.uid || '--')}</b></span>
+                </div>
+                <div class="space-y-1 text-[11px] text-slate-600 bg-slate-50/80 p-2.5 rounded-xl border border-slate-100 mb-2">
+                  <div class="flex items-center justify-between gap-1">
+                    <span class="truncate">Father: <b class="text-slate-800">${escapeHtml(student.father || prof.father || '--')}</b></span>
+                    ${fatherPhone ? `<a href="tel:${escapeHtml(fatherPhone)}" onclick="event.stopPropagation()" class="px-2 py-0.5 rounded bg-emerald-100 text-emerald-800 font-bold text-[10px] hover:bg-emerald-200 inline-flex items-center gap-1 shrink-0"><i class="fas fa-phone-alt text-[8px]"></i> Call</a>` : ''}
+                  </div>
+                  ${fatherPhone ? `<div class="text-[10px] text-slate-500">Father Mobile: <b class="text-slate-700 font-mono">${escapeHtml(fatherPhone)}</b></div>` : ''}
+                  ${motherPhone ? `<div class="text-[10px] text-slate-500">Mother Mobile: <b class="text-slate-700 font-mono">${escapeHtml(motherPhone)}</b></div>` : ''}
+                  <div class="flex flex-wrap items-center gap-x-2 gap-y-0.5 text-[10px] text-slate-500 pt-1 border-t border-slate-200/50">
+                    <span>DOB: <b class="text-slate-700 font-mono">${escapeHtml(dobFormatted || '--')}</b></span>
+                    <span>•</span>
+                    <span>Adm Date: <b class="text-slate-700 font-mono">${escapeHtml(admDateFormatted || '--')}</b></span>
+                  </div>
+                </div>
+                <div class="flex flex-wrap items-center justify-between gap-1.5 pt-1 border-t border-slate-100 text-[11px]">
+                  <div class="flex flex-wrap items-center gap-1.5">
+                    ${group ? `<span class="px-2 py-0.5 rounded bg-blue-50 text-blue-700 font-bold border border-blue-200 text-[10px]">Group ₹${escapeHtml(String(group.fee || 0))}</span>` : ''}
+                    ${hasConc ? `<span class="px-2 py-0.5 rounded bg-emerald-50 text-emerald-700 font-bold border border-emerald-200 text-[10px]">Conc: ₹${escapeHtml(String(student.concessionFee))}</span>` : ''}
+                  </div>
+                  <span class="text-blue-600 font-bold inline-flex items-center gap-1 hover:underline text-xs">View Profile <i class="fas fa-chevron-right text-[10px]"></i></span>
+                </div>
               </div>
-              <div class="text-xs text-slate-500">Adm: <b class="text-slate-700">${escapeHtml(student.adm || '--')}</b> • UID: <b class="text-slate-700">${escapeHtml(student.uid || '--')}</b> • ${escapeHtml(student.father ? `Father: ${student.father}` : (student.mobile || 'No contact'))}</div>
             </div>
-            <i class="fas fa-chevron-right text-xs text-slate-300 ml-1"></i>
-          </button>`;
+          </div>`;
       }).join('');
 
       const stuTarget = document.getElementById('official-tab-students');
@@ -1168,25 +1217,24 @@ import { signInAnonymously, onAuthStateChanged, signInWithEmailAndPassword } fro
             </div>
           </div>
 
-          <!-- Full-Screen Responsive Data Table with Sticky Header & Sticky Left Columns -->
-          <div class="stu-reg-scroll-wrap w-full rounded-xl border border-slate-200">
+          <!-- Full-Screen Responsive Data Table with Sticky Header & Sticky Left Columns (Desktop only) -->
+          <div class="stu-reg-scroll-wrap hidden md:block w-full rounded-xl border border-slate-200">
             <table class="stu-reg-table w-full text-xs min-w-[1400px]">
               <thead>
                 <tr class="bg-slate-100 text-slate-700">
                   <th class="stu-sticky-col-1 px-2.5 py-2.5 w-12 text-center font-extrabold">NO</th>
                   <th class="stu-sticky-col-2 px-2 py-2.5 text-center w-14 font-extrabold">Profile</th>
                   ${headerCells}
-                  <th class="px-2.5 py-2.5 text-left font-extrabold">Group</th>
                 </tr>
               </thead>
               <tbody>
-                ${rows || `<tr><td colspan="${coreAdminColumns.length + extraKeys.length + 3}" class="p-6 text-center text-slate-500 font-semibold">${emptyStudentMessage}</td></tr>`}
+                ${rows || `<tr><td colspan="${coreAdminColumns.length + 2}" class="p-6 text-center text-slate-500 font-semibold">${emptyStudentMessage}</td></tr>`}
               </tbody>
             </table>
           </div>
 
-          <!-- Mobile Cards View -->
-          <div class="official-mobile-card-list mt-4">${cardRows || `<div class="text-sm text-slate-500 text-center py-4">${emptyStudentMessage}</div>`}</div>
+          <!-- Mobile Cards View (Mobile only) -->
+          <div class="official-mobile-card-list block md:hidden mt-4 space-y-2.5">${cardRows || `<div class="text-sm text-slate-500 text-center py-4">${emptyStudentMessage}</div>`}</div>
 
           <!-- Bottom Pagination Bar -->
           <div class="flex flex-wrap items-center justify-between gap-3 mt-3 px-3 py-2.5 rounded-xl bg-slate-50 border border-slate-200 text-xs">
