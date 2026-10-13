@@ -679,6 +679,7 @@ const activateResultTab = (tabEl, { updateHash = true } = {}) => {
     // Toggle full-width layout body class specifically for Marks Entry tab
     if (tabEl.dataset.target === 'marks-page') {
         document.body.classList.add('marks-entry-active');
+        updateMarksDownloadAndUploadState();
     } else {
         document.body.classList.remove('marks-entry-active');
     }
@@ -1484,6 +1485,7 @@ const populateDropdowns = () => {
         } else if (current && teacherAllowedClasses.includes(current)) {
             entryClassSelect.value = current;
         }
+        updateMarksDownloadAndUploadState();
     }
 
     [reportClassSelect, subjectClassSelect, examConfigClassSelect].forEach((select) => {
@@ -2465,6 +2467,53 @@ const downloadMarksTemplate = (asXlsx = false) => {
     XLSX.utils.book_append_sheet(wb, ws, 'marks_template');
     XLSX.writeFile(wb, `marks_template_${classLabel}_${examLabel}.xlsx`, { bookType: 'xlsx' });
 };
+function updateMarksDownloadAndUploadState() {
+    const classVal = document.getElementById('entry-class-select')?.value || '';
+    const examVal = document.getElementById('entry-exam-select')?.value || '';
+    const isBothSelected = Boolean(classVal && examVal);
+
+    const csvBtn = document.getElementById('marks-template-csv-btn');
+    const xlsxBtn = document.getElementById('marks-template-xlsx-btn');
+    const fileInput = document.getElementById('marks-bulk-file');
+    const uploadBtn = document.getElementById('marks-bulk-upload-btn');
+
+    if (csvBtn) {
+        csvBtn.disabled = !isBothSelected;
+        csvBtn.classList.toggle('opacity-50', !isBothSelected);
+        csvBtn.classList.toggle('cursor-not-allowed', !isBothSelected);
+        csvBtn.classList.toggle('cursor-pointer', isBothSelected);
+        csvBtn.classList.toggle('text-slate-400', !isBothSelected);
+        csvBtn.classList.toggle('text-slate-700', isBothSelected);
+    }
+
+    if (xlsxBtn) {
+        xlsxBtn.disabled = !isBothSelected;
+        xlsxBtn.classList.toggle('opacity-50', !isBothSelected);
+        xlsxBtn.classList.toggle('cursor-not-allowed', !isBothSelected);
+        xlsxBtn.classList.toggle('cursor-pointer', isBothSelected);
+        xlsxBtn.classList.toggle('text-slate-400', !isBothSelected);
+        xlsxBtn.classList.toggle('text-slate-700', isBothSelected);
+    }
+
+    if (fileInput) {
+        fileInput.disabled = !isBothSelected;
+        fileInput.classList.toggle('opacity-50', !isBothSelected);
+        fileInput.classList.toggle('cursor-not-allowed', !isBothSelected);
+    }
+
+    if (uploadBtn) {
+        uploadBtn.disabled = !isBothSelected;
+        uploadBtn.classList.toggle('opacity-50', !isBothSelected);
+        uploadBtn.classList.toggle('cursor-not-allowed', !isBothSelected);
+        uploadBtn.classList.toggle('cursor-pointer', isBothSelected);
+        if (isBothSelected) {
+            uploadBtn.className = 'bg-emerald-600 hover:bg-emerald-700 text-white px-3 py-1.5 rounded-lg text-xs font-bold transition flex items-center gap-1.5 shadow-sm cursor-pointer';
+        } else {
+            uploadBtn.className = 'bg-gray-200 text-gray-400 px-3 py-1.5 rounded-lg text-xs font-bold transition flex items-center gap-1.5 shadow-xs opacity-50 cursor-not-allowed';
+        }
+    }
+};
+
 const updateBulkStatus = (message = '', percent = 0, type = 'info') => {
     const statusEl = document.getElementById('marks-bulk-status');
     const progressEl = document.getElementById('marks-bulk-progress');
@@ -2489,7 +2538,161 @@ const updateBulkStatus = (message = '', percent = 0, type = 'info') => {
         progressEl.className = `${type === 'error' ? 'bg-red-500' : type === 'success' ? 'bg-emerald-500' : 'bg-indigo-600'} h-2.5 rounded-full transition-all duration-300`;
     }
 };
-const uploadBulkMarks = async () => {
+
+// --- Marks Bulk Upload Review & Conflict System ---
+let currentMarksReviewData = null;
+
+const closeMarksReviewModal = () => {
+    const modal = document.getElementById('marks-upload-review-modal');
+    if (modal) {
+        modal.classList.add('hidden');
+        modal.classList.remove('flex');
+        modal.style.display = 'none';
+    }
+    document.body.classList.remove('modal-scroll-lock');
+    currentMarksReviewData = null;
+    const fileInput = document.getElementById('marks-bulk-file');
+    if (fileInput) fileInput.value = '';
+};
+
+const openMarksReviewModal = () => {
+    const modal = document.getElementById('marks-upload-review-modal');
+    if (modal) {
+        modal.classList.remove('hidden');
+        modal.classList.add('flex');
+        modal.style.display = 'flex';
+    }
+    document.body.classList.add('modal-scroll-lock');
+};
+
+const renderMarksReviewModalUI = () => {
+    if (!currentMarksReviewData) return;
+    const { className, subjectRows, rows, totalRows, validCount, issueRowCount, totalBlankFields, existingRowCount } = currentMarksReviewData;
+
+    const examTitle = currentExamContext?.label || currentExamContext?.key || 'Exam';
+    const titleEl = document.getElementById('marks-review-modal-title');
+    const subtitleEl = document.getElementById('marks-review-modal-subtitle');
+    if (titleEl) titleEl.textContent = `Review Marks Upload - Class ${className} (${examTitle})`;
+    if (subtitleEl) subtitleEl.textContent = `Academic Year: ${currentAcademicYear || 'N/A'} • ${totalRows} records loaded from file.`;
+
+    const totalEl = document.getElementById('marks-review-stat-total');
+    const validEl = document.getElementById('marks-review-stat-valid');
+    const issuesEl = document.getElementById('marks-review-stat-issues');
+    const blanksEl = document.getElementById('marks-review-stat-blanks');
+    const existingEl = document.getElementById('marks-review-stat-existing');
+
+    if (totalEl) totalEl.textContent = totalRows;
+    if (validEl) validEl.textContent = validCount;
+    if (issuesEl) issuesEl.textContent = issueRowCount;
+    if (blanksEl) blanksEl.textContent = totalBlankFields;
+    if (existingEl) existingEl.textContent = existingRowCount;
+
+    // Existing Records Conflict Container
+    const conflictContainer = document.getElementById('marks-review-conflict-container');
+    if (conflictContainer) {
+        if (existingRowCount > 0) {
+            conflictContainer.classList.remove('opacity-50');
+        } else {
+            conflictContainer.classList.add('opacity-50');
+        }
+    }
+
+    // Buttons
+    const skipBtn = document.getElementById('marks-review-skip-issues-btn');
+    const skipCountEl = document.getElementById('marks-review-skip-count');
+    if (skipBtn && skipCountEl) {
+        if (issueRowCount > 0 && validCount > 0) {
+            skipBtn.classList.remove('hidden');
+            skipCountEl.textContent = validCount;
+        } else {
+            skipBtn.classList.add('hidden');
+        }
+    }
+
+    const confirmBtn = document.getElementById('marks-review-confirm-upload-btn');
+    const confirmLabel = document.getElementById('marks-review-confirm-upload-label');
+    if (confirmBtn && confirmLabel) {
+        confirmLabel.textContent = `Start Upload (${validCount})`;
+        confirmBtn.disabled = validCount === 0;
+        confirmBtn.classList.toggle('opacity-50', validCount === 0);
+        confirmBtn.classList.toggle('cursor-not-allowed', validCount === 0);
+    }
+
+    // Render Preview Table
+    const container = document.getElementById('marks-review-table-container');
+    if (!container) return;
+
+    let tableHtml = `
+        <table class="w-full text-xs text-left text-slate-700 border-collapse bg-white">
+            <thead class="bg-slate-100 text-slate-700 font-bold uppercase sticky top-0 z-10 shadow-xs border-b border-slate-300">
+                <tr>
+                    <th class="p-2.5 border-b border-r border-slate-200 text-center w-12 bg-slate-100">#</th>
+                    <th class="p-2.5 border-b border-r border-slate-200 min-w-[85px] bg-slate-100">Status</th>
+                    <th class="p-2.5 border-b border-r border-slate-200 min-w-[100px] bg-slate-100">Adm No</th>
+                    <th class="p-2.5 border-b border-r border-slate-200 min-w-[160px] bg-slate-100">Student Name</th>
+                    <th class="p-2.5 border-b border-r border-slate-200 min-w-[80px] text-center bg-slate-100">Total Att.</th>
+                    <th class="p-2.5 border-b border-r border-slate-200 min-w-[80px] text-center bg-slate-100">Pres. Att.</th>
+    `;
+
+    subjectRows.forEach((sub) => {
+        tableHtml += `<th class="p-2.5 border-b border-r border-slate-200 text-center min-w-[110px] bg-slate-100">
+            ${escapeHtml(sub.name)}
+            <div class="text-[10px] text-slate-400 font-normal">Max: ${sub.maxMarks} | Pass: ${sub.passMarks}</div>
+        </th>`;
+    });
+
+    tableHtml += `</tr></thead><tbody class="divide-y divide-slate-100">`;
+
+    rows.forEach((r) => {
+        let rowBg = 'hover:bg-slate-50';
+        let statusBadge = '';
+
+        if (r.hasFatalError) {
+            rowBg = 'bg-rose-50/60 hover:bg-rose-100/60';
+            statusBadge = `<span class="px-2 py-0.5 rounded-full text-[10px] font-black bg-rose-200 text-rose-800" title="${escapeHtml(r.rowIssues.join('; '))}">ISSUE</span>`;
+        } else if (r.isDuplicate) {
+            rowBg = 'bg-sky-50/60 hover:bg-sky-100/60';
+            statusBadge = `<span class="px-2 py-0.5 rounded-full text-[10px] font-black bg-sky-200 text-sky-800" title="Marks already exist for this student">EXISTING</span>`;
+        } else {
+            statusBadge = `<span class="px-2 py-0.5 rounded-full text-[10px] font-black bg-emerald-100 text-emerald-800">READY</span>`;
+        }
+
+        tableHtml += `
+            <tr class="${rowBg}">
+                <td class="p-2.5 text-center text-slate-400 border-b border-r border-slate-100 font-mono">${r.rowIndex}</td>
+                <td class="p-2.5 border-b border-r border-slate-100 whitespace-nowrap">${statusBadge}</td>
+                <td class="p-2.5 border-b border-r border-slate-100 font-mono font-semibold text-slate-600">${escapeHtml(r.admNo)}</td>
+                <td class="p-2.5 border-b border-r border-slate-100 font-bold text-slate-800">${escapeHtml(r.studentName)}</td>
+                <td class="p-2.5 border-b border-r border-slate-100 text-center font-mono">${r.attendance.workingDays || '--'}</td>
+                <td class="p-2.5 border-b border-r border-slate-100 text-center font-mono">${r.attendance.presentDays || '--'}</td>
+        `;
+
+        subjectRows.forEach((sub) => {
+            const fStatus = r.fieldStatuses[sub.id] || { status: 'blank', value: '--' };
+            let cellClass = 'p-2.5 border-b border-r border-slate-100 text-center font-mono ';
+            let cellTitle = '';
+
+            if (fStatus.status === 'error') {
+                cellClass += 'bg-rose-100 text-rose-900 font-bold border-rose-300';
+                cellTitle = fStatus.reason || 'Invalid mark';
+            } else if (fStatus.status === 'blank') {
+                cellClass += 'bg-amber-100 text-amber-900 border-amber-200 italic font-semibold';
+                cellTitle = 'Blank / Not entered';
+            } else {
+                cellClass += 'font-semibold text-slate-700';
+            }
+
+            tableHtml += `<td class="${cellClass}" title="${escapeHtml(cellTitle)}">${escapeHtml(fStatus.value)}</td>`;
+        });
+
+        tableHtml += `</tr>`;
+    });
+
+    tableHtml += `</tbody></table>`;
+    container.innerHTML = tableHtml;
+};
+
+const parseAndReviewBulkMarks = async () => {
     const className = document.getElementById('entry-class-select')?.value || '';
     const examId = document.getElementById('entry-exam-select')?.value || '';
     const file = document.getElementById('marks-bulk-file')?.files?.[0];
@@ -2497,122 +2700,300 @@ const uploadBulkMarks = async () => {
     if (roleScope === 'staff' && teacherAssignedClasses.length > 0 && !teacherAssignedClasses.includes(className)) {
         return alert('You can only upload marks for your assigned classes.');
     }
-    if (!file) return alert('Choose a file first.');
+    if (!file) return alert('Choose a spreadsheet file (.csv or .xlsx) first.');
     if (!currentExamSchema) return alert('Schema not loaded for selected exam.');
     if (!window.XLSX) return alert('Spreadsheet library is still loading. Try again in a moment.');
-    updateBulkStatus('Reading spreadsheet file...', 15);
+
+    updateBulkStatus('Reading spreadsheet file...', 20);
+
     const subjectRows = getSchemaSubjectRows(currentExamSchema, currentExamContext?.key || '');
-    const subjectNames = subjectRows.map((subject) => subject.name);
-    const studentMap = new Map(students.filter((s) => s.class === className && (s.academicYear === currentAcademicYear || !s.academicYear)).map((s) => [String(s.id), s]));
-    const wb = XLSX.read(await file.arrayBuffer(), { type: 'array' });
-    updateBulkStatus('Validating student records and marks...', 40);
-    const rows = XLSX.utils.sheet_to_json(wb.Sheets[wb.SheetNames[0]], { defval: '' });
-    const payloads = [];
-    const errors = [];
-    rows.forEach((row, rowIndex) => {
-        const line = rowIndex + 2;
-        const studentId = String(row.student_id || row.studentId || row.STUDENT_ID || '').trim();
-        if (!studentId) {
-            errors.push(`Row ${line}: missing student_id.`);
-            return;
-        }
-        if (!studentMap.has(studentId)) {
-            errors.push(`Row ${line}: student_id ${studentId} is not in ${className}.`);
-            return;
-        }
-        const marks = {};
-        let hasMark = false;
-        const totalAttendance = Number(row.total_attendance ?? row.working_days ?? row.workingDays ?? '');
-        const presentAttendance = Number(row.present_attendance ?? row.present_days ?? row.presentDays ?? '');
-        subjectRows.forEach((subject) => {
-            const raw = row[subject.name] ?? row[subject.id] ?? '';
-            const value = raw === undefined || raw === null ? '' : String(raw).trim();
-            if (!value) return;
-            const upper = value.toUpperCase();
-            const numeric = Number(value);
-            const valid = upper === 'P' || upper === 'A' || upper === 'AB' || (Number.isFinite(numeric) && numeric >= 0 && numeric <= Number(subject.maxMarks || 0));
-            if (!valid) errors.push(`Row ${line}: invalid mark "${value}" for ${subject.name}.`);
-            marks[subject.id] = { value, name: subject.name, maxMarks: Number(subject.maxMarks || 0), passMarks: Number(subject.passMarks || 0) };
-            hasMark = true;
-        });
-        if (hasMark) payloads.push({ studentId, marks, attendance: { workingDays: Number.isFinite(totalAttendance) ? totalAttendance : 0, presentDays: Number.isFinite(presentAttendance) ? presentAttendance : 0 } });
+    if (!subjectRows.length) return alert('No subjects configured for this class and exam.');
+
+    const scopedStudents = students.filter((s) => s.class === className && (s.academicYear === currentAcademicYear || !s.academicYear));
+    const studentMap = new Map();
+    const admMap = new Map();
+    scopedStudents.forEach((s) => {
+        if (s.id) studentMap.set(String(s.id).trim(), s);
+        const adm = String(s.adm || s.admissionNo || s.uid || '').trim();
+        if (adm) admMap.set(adm, s);
     });
-    if (errors.length) {
-        updateBulkStatus(`Upload stopped: ${errors.slice(0, 3).join(' ')}`, 100, 'error');
-        showAppAlert({
-            title: 'Spreadsheet Format Issues',
-            message: `Please resolve these errors and upload again:\n\n${errors.slice(0, 8).join('\n')}${errors.length > 8 ? `\n...and ${errors.length - 8} more issues` : ''}`,
-            type: 'error'
-        });
+
+    const existingRecordMap = new Map();
+    examResultsCache.forEach((rec) => {
+        if (resultMatchesExam(rec, examId) && rec.classLabel === className && (!rec.academicYear || rec.academicYear === currentAcademicYear)) {
+            existingRecordMap.set(String(rec.studentId).trim(), rec);
+        }
+    });
+
+    let rawRows = [];
+    try {
+        const wb = XLSX.read(await file.arrayBuffer(), { type: 'array' });
+        const firstSheetName = wb.SheetNames[0];
+        if (!firstSheetName) throw new Error('Spreadsheet has no sheets');
+        rawRows = XLSX.utils.sheet_to_json(wb.Sheets[firstSheetName], { defval: '' });
+    } catch (err) {
+        console.error('Error reading spreadsheet', err);
+        updateBulkStatus('Failed to read spreadsheet file', 100, 'error');
+        alert('Could not read file. Please ensure it is a valid Excel (.xlsx) or CSV file.');
         return;
     }
-    if (!payloads.length) {
-        updateBulkStatus('No valid marks found in file.', 0, 'error');
-        return alert('No valid student mark rows found in file.');
+
+    if (!rawRows.length) {
+        updateBulkStatus('File is empty', 100, 'error');
+        return alert('The selected file contains no data rows.');
     }
-    
-    // Commit in chunks to show real progress
-    const chunkSize = 100;
-    for (let i = 0; i < payloads.length; i += chunkSize) {
-        const chunk = payloads.slice(i, i + chunkSize);
-        const batch = writeBatch(db);
-        chunk.forEach((entry) => {
-            const docId = sanitizeBulkDocId(`${currentExamSchema.id}_${currentExamContext?.key || ''}_${entry.studentId}`);
-            const summary = buildResultSummary(entry.marks, subjectRows);
-            batch.set(doc(db, `${BASE_PATH}/examResults`, docId), {
-                id: docId,
-                examId,
-                schemaId: currentExamSchema.id,
-                examKey: currentExamContext?.key || '',
-                examType: currentExamContext?.key || '',
-                examLabel: currentExamContext?.label || '',
-                classLabel: className,
-                academicYear: currentAcademicYear || '',
-                studentId: entry.studentId,
-                marks: entry.marks,
-                attendance: entry.attendance,
-                grades: summary.grades,
-                totals: summary.totals,
-                showMarksToStudents: true,
-                updatedAt: Date.now(),
-                published: false
-            }, { merge: true });
+
+    updateBulkStatus('Analyzing records and verifying marks...', 50);
+
+    let totalBlankFields = 0;
+    let totalIssueFields = 0;
+    let validCount = 0;
+    let issueRowCount = 0;
+    let existingRowCount = 0;
+
+    const parsedRows = rawRows.map((row, index) => {
+        const rawStudentId = String(row.student_id ?? row.studentId ?? row.STUDENT_ID ?? row.id ?? '').trim();
+        const rawAdm = String(row.adm ?? row.admission_no ?? row.admissionNo ?? row.roll_no ?? '').trim();
+        const rawName = String(row.student_name ?? row.studentName ?? row.name ?? '').trim();
+
+        // Match student
+        let matchedStudent = studentMap.get(rawStudentId);
+        if (!matchedStudent && rawAdm && admMap.has(rawAdm)) {
+            matchedStudent = admMap.get(rawAdm);
+        }
+        if (!matchedStudent && rawName) {
+            matchedStudent = scopedStudents.find((s) => (s.name || '').trim().toLowerCase() === rawName.toLowerCase());
+        }
+
+        const studentId = matchedStudent ? matchedStudent.id : (rawStudentId || rawAdm);
+        const studentName = matchedStudent ? (matchedStudent.name || rawName) : (rawName || 'Unknown Student');
+        const admNo = matchedStudent ? (matchedStudent.adm || matchedStudent.admissionNo || matchedStudent.uid || rawAdm || '-') : (rawAdm || '-');
+
+        const rowIssues = [];
+        let hasFatalError = false;
+
+        if (!studentId) {
+            rowIssues.push('Missing Student ID');
+            hasFatalError = true;
+        } else if (!matchedStudent) {
+            rowIssues.push(`Student not found in Class ${className}`);
+            hasFatalError = true;
+        }
+
+        const isDuplicate = Boolean(studentId && existingRecordMap.has(String(studentId)));
+        if (isDuplicate) {
+            existingRowCount++;
+        }
+
+        // Attendance
+        const rawTotalAtt = row.total_attendance ?? row.working_days ?? row.workingDays ?? '';
+        const rawPresAtt = row.present_attendance ?? row.present_days ?? row.presentDays ?? '';
+        const workingDays = Number(rawTotalAtt);
+        const presentDays = Number(rawPresAtt);
+
+        // Subject mark evaluation
+        const marks = {};
+        const fieldStatuses = {};
+
+        subjectRows.forEach((sub) => {
+            const rawVal = row[sub.name] ?? row[sub.id] ?? row[sub.name.toLowerCase()] ?? '';
+            const val = String(rawVal ?? '').trim();
+
+            if (val === '') {
+                fieldStatuses[sub.id] = { status: 'blank', value: '--' };
+                totalBlankFields++;
+            } else {
+                const upper = val.toUpperCase();
+                const numeric = Number(val);
+                const max = Number(sub.maxMarks || 100);
+                const pass = Number(sub.passMarks || 35);
+                const isValid = upper === 'P' || upper === 'A' || upper === 'AB' || (Number.isFinite(numeric) && numeric >= 0 && numeric <= max);
+
+                if (isValid) {
+                    marks[sub.id] = { value: val, name: sub.name, maxMarks: max, passMarks: pass };
+                    fieldStatuses[sub.id] = { status: 'valid', value: val };
+                } else {
+                    hasFatalError = true;
+                    totalIssueFields++;
+                    const reason = `Invalid mark "${val}". Must be 0-${max}, P, or A`;
+                    fieldStatuses[sub.id] = { status: 'error', value: val, reason };
+                    rowIssues.push(`${sub.name}: ${reason}`);
+                }
+            }
         });
-        await batch.commit();
-        const progressPct = Math.round(50 + ((i + chunk.length) / payloads.length) * 48);
-        updateBulkStatus(`Saving to database (${Math.min(i + chunkSize, payloads.length)} of ${payloads.length})...`, progressPct);
-    }
 
-    updateBulkStatus(`Uploaded ${payloads.length} row(s) successfully as draft.`, 100, 'success');
-    const bulkFileInput = document.getElementById('marks-bulk-file');
-    if (bulkFileInput) bulkFileInput.value = '';
-    loadMarksTable();
+        if (hasFatalError) {
+            issueRowCount++;
+        } else {
+            validCount++;
+        }
 
-    await showAppAlert({
-        title: 'Marks Uploaded Successfully',
-        message: `Successfully uploaded ${payloads.length} student result(s) into Draft.\n\n• Class: ${className}\n• Exam: ${currentExamContext?.label || examId}\n• Status: Ready in Draft Review`,
-        type: 'success'
+        return {
+            rowIndex: index + 1,
+            studentId,
+            studentName,
+            admNo,
+            matchedStudent,
+            isDuplicate,
+            hasFatalError,
+            rowIssues,
+            marks,
+            fieldStatuses,
+            attendance: {
+                workingDays: Number.isFinite(workingDays) ? workingDays : 0,
+                presentDays: Number.isFinite(presentDays) ? presentDays : 0
+            }
+        };
     });
+
+    currentMarksReviewData = {
+        className,
+        examId,
+        subjectRows,
+        rows: parsedRows,
+        totalRows: parsedRows.length,
+        validCount,
+        issueRowCount,
+        totalBlankFields,
+        totalIssueFields,
+        existingRowCount
+    };
+
+    renderMarksReviewModalUI();
+    openMarksReviewModal();
+    updateBulkStatus(`Spreadsheet parsed: ${validCount} valid records, ${issueRowCount} issues found.`, 100, issueRowCount > 0 ? 'info' : 'success');
 };
 
-document.getElementById('entry-exam-select').addEventListener('change', loadMarksTable);
-document.getElementById('entry-class-select').addEventListener('change', () => {
+const executeConfirmedMarksUpload = async (skipIssues = false) => {
+    if (!currentMarksReviewData) return;
+    const { className, examId, subjectRows, rows } = currentMarksReviewData;
+
+    let targetRows = skipIssues ? rows.filter((r) => !r.hasFatalError) : rows;
+    if (!skipIssues && targetRows.some((r) => r.hasFatalError)) {
+        return alert('Please resolve issues or click "Skip Issues & Upload Valid" to proceed with valid records only.');
+    }
+
+    if (!targetRows.length) {
+        return alert('No valid student records to upload.');
+    }
+
+    // Conflict Resolution for Existing Records
+    const duplicateAction = document.querySelector('input[name="marks-duplicate-action"]:checked')?.value || 'merge';
+    if (duplicateAction === 'skip') {
+        targetRows = targetRows.filter((r) => !r.isDuplicate);
+        if (!targetRows.length) {
+            closeMarksReviewModal();
+            return alert('All records in this file already exist in this class and you chose "Skip Existing". No new records were uploaded.');
+        }
+    }
+
+    const confirmBtn = document.getElementById('marks-review-confirm-upload-btn');
+    const oldBtnHtml = confirmBtn ? confirmBtn.innerHTML : '';
+    if (confirmBtn) {
+        confirmBtn.disabled = true;
+        confirmBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Uploading...';
+    }
+
+    try {
+        const chunkSize = 100;
+        let committedCount = 0;
+
+        for (let i = 0; i < targetRows.length; i += chunkSize) {
+            const chunk = targetRows.slice(i, i + chunkSize);
+            const batch = writeBatch(db);
+
+            chunk.forEach((entry) => {
+                const docId = sanitizeBulkDocId(`${currentExamSchema.id}_${currentExamContext?.key || ''}_${entry.studentId}`);
+                let finalMarks = entry.marks;
+
+                // Merge strategy: if student already has marks in system, merge new marks over existing
+                if (duplicateAction === 'merge' && entry.isDuplicate) {
+                    const existingRec = examResultsCache.find((r) => resultMatchesExam(r, examId) && r.studentId === entry.studentId);
+                    if (existingRec && existingRec.marks) {
+                        finalMarks = Object.assign({}, existingRec.marks, entry.marks);
+                    }
+                }
+
+                const summary = buildResultSummary(finalMarks, subjectRows);
+                batch.set(doc(db, `${BASE_PATH}/examResults`, docId), {
+                    id: docId,
+                    examId,
+                    schemaId: currentExamSchema.id,
+                    examKey: currentExamContext?.key || '',
+                    examType: currentExamContext?.key || '',
+                    examLabel: currentExamContext?.label || '',
+                    classLabel: className,
+                    academicYear: currentAcademicYear || '',
+                    studentId: entry.studentId,
+                    marks: finalMarks,
+                    attendance: entry.attendance,
+                    grades: summary.grades,
+                    totals: summary.totals,
+                    showMarksToStudents: true,
+                    updatedAt: Date.now(),
+                    published: false
+                }, { merge: true });
+                committedCount++;
+            });
+
+            await batch.commit();
+            const pct = Math.round(((i + chunk.length) / targetRows.length) * 100);
+            updateBulkStatus(`Uploaded ${committedCount} of ${targetRows.length}...`, pct);
+        }
+
+        closeMarksReviewModal();
+        updateBulkStatus(`Uploaded ${committedCount} row(s) successfully as draft.`, 100, 'success');
+        loadMarksTable();
+        notify(`Successfully uploaded ${committedCount} result record(s) into Draft for Class ${className}!`, 'success');
+    } catch (err) {
+        console.error('Error committing marks', err);
+        if (confirmBtn) {
+            confirmBtn.disabled = false;
+            confirmBtn.innerHTML = oldBtnHtml;
+        }
+        alert('Upload failed: ' + (err.message || 'Please check your connection and try again.'));
+    }
+};
+
+// Event Listeners for Marks Entry controls & review modal
+document.getElementById('entry-exam-select')?.addEventListener('change', () => {
+    updateMarksDownloadAndUploadState();
+    loadMarksTable();
+});
+
+document.getElementById('entry-class-select')?.addEventListener('change', () => {
     const examSelect = document.getElementById('entry-exam-select');
     renderExamSelectOptions(examSelect, document.getElementById('entry-class-select')?.value || '', currentAcademicYear);
     if (examSelect) examSelect.value = '';
+    updateMarksDownloadAndUploadState();
     loadMarksTable();
 });
+
 document.getElementById('marks-template-csv-btn')?.addEventListener('click', () => downloadMarksTemplate(false));
 document.getElementById('marks-template-xlsx-btn')?.addEventListener('click', () => downloadMarksTemplate(true));
-document.getElementById('marks-bulk-upload-btn')?.addEventListener('click', async () => {
-    try {
-        await uploadBulkMarks();
-    } catch (error) {
-        console.error('Bulk marks upload failed', error);
-        updateBulkStatus(`Bulk upload failed: ${error?.message || 'Check file format and try again.'}`, 100, 'error');
-        alert('Bulk upload failed. Check file format and try again.');
+
+document.getElementById('marks-bulk-file')?.addEventListener('change', () => {
+    const file = document.getElementById('marks-bulk-file')?.files?.[0];
+    if (file) {
+        parseAndReviewBulkMarks();
     }
 });
+
+document.getElementById('marks-bulk-upload-btn')?.addEventListener('click', async () => {
+    try {
+        await parseAndReviewBulkMarks();
+    } catch (error) {
+        console.error('Bulk marks review failed', error);
+        updateBulkStatus(`Review failed: ${error?.message || 'Check file format and try again.'}`, 100, 'error');
+        alert('File review failed. Check file format and try again.');
+    }
+});
+
+document.getElementById('marks-review-modal-close-x')?.addEventListener('click', closeMarksReviewModal);
+document.getElementById('marks-review-cancel-btn')?.addEventListener('click', closeMarksReviewModal);
+document.getElementById('marks-review-skip-issues-btn')?.addEventListener('click', () => executeConfirmedMarksUpload(true));
+document.getElementById('marks-review-confirm-upload-btn')?.addEventListener('click', () => executeConfirmedMarksUpload(false));
+
 
 const validateSingleMarkInput = (input) => {
     if (!input || !currentExamSchema) return true;
