@@ -1508,22 +1508,166 @@ window.AppSession?.guardStudentPage?.();
             if (scale === 50) return score >= 45 ? 'A+' : score >= 40 ? 'A' : score >= 30 ? 'B' : score >= 18 ? 'C' : 'F';
             return score >= 90 ? 'A+' : score >= 80 ? 'A' : score >= 60 ? 'B' : score >= 35 ? 'C' : 'F';
         };
+        const getStudentGender = (st = {}) => {
+            const raw = String(st?.gender || st?.profile?.gender || st?.sex || '').trim().toLowerCase();
+            if (raw.startsWith('f') || raw === 'girl' || raw.includes('fem') || raw.includes('പെൺ') || raw.includes('സ്ത്രീ')) {
+                return 'female';
+            }
+            return 'male';
+        };
+
+        const BOY_AVATAR_SVG = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 120 120" width="120" height="120">
+  <circle cx="60" cy="60" r="58" fill="#e0e7ff"/>
+  <path d="M 36 44 C 36 22, 84 22, 84 44 Z" fill="#ffffff" stroke="#cbd5e1" stroke-width="2"/>
+  <rect x="34" y="42" width="52" height="6" rx="3" fill="#ffffff" stroke="#cbd5e1" stroke-width="1.5"/>
+  <circle cx="60" cy="54" r="22" fill="#fed7aa"/>
+  <path d="M 38 46 Q 37 54 41 57" stroke="#1e293b" stroke-width="3" fill="none" stroke-linecap="round"/>
+  <path d="M 82 46 Q 83 54 79 57" stroke="#1e293b" stroke-width="3" fill="none" stroke-linecap="round"/>
+  <circle cx="52" cy="53" r="2.8" fill="#1e293b"/>
+  <circle cx="68" cy="53" r="2.8" fill="#1e293b"/>
+  <path d="M 48 47 Q 52 45 56 47" stroke="#1e293b" stroke-width="1.8" fill="none" stroke-linecap="round"/>
+  <path d="M 64 47 Q 68 45 72 47" stroke="#1e293b" stroke-width="1.8" fill="none" stroke-linecap="round"/>
+  <path d="M 54 62 Q 60 67 66 62" stroke="#ea580c" stroke-width="2.2" fill="none" stroke-linecap="round"/>
+  <path d="M 28 108 C 28 78, 92 78, 92 108 Z" fill="#2563eb"/>
+  <path d="M 52 78 L 60 88 L 68 78 Z" fill="#ffffff"/>
+</svg>`;
+
+        const GIRL_AVATAR_SVG = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 120 120" width="120" height="120">
+  <circle cx="60" cy="60" r="58" fill="#fce7f3"/>
+  <path d="M 28 66 C 28 26, 92 26, 92 66 C 92 88, 80 108, 60 108 C 40 108, 28 88, 28 66 Z" fill="#0d9488"/>
+  <ellipse cx="60" cy="56" rx="18" ry="21" fill="#fed7aa"/>
+  <path d="M 43 45 C 47 41, 73 41, 77 45 C 70 41, 50 41, 43 45 Z" fill="#ffffff"/>
+  <circle cx="53" cy="55" r="2.8" fill="#1e293b"/>
+  <circle cx="67" cy="55" r="2.8" fill="#1e293b"/>
+  <path d="M 49 51 Q 53 49 56 52" stroke="#0f172a" stroke-width="1.8" fill="none" stroke-linecap="round"/>
+  <path d="M 64 52 Q 67 49 71 51" stroke="#0f172a" stroke-width="1.8" fill="none" stroke-linecap="round"/>
+  <path d="M 55 64 Q 60 68 65 64" stroke="#db2777" stroke-width="2.2" fill="none" stroke-linecap="round"/>
+  <path d="M 26 108 C 34 82, 86 82, 94 108 Z" fill="#0f766e"/>
+</svg>`;
+
+        const BOY_AVATAR_DATA_URL = `data:image/svg+xml;utf8,${encodeURIComponent(BOY_AVATAR_SVG)}`;
+        const GIRL_AVATAR_DATA_URL = `data:image/svg+xml;utf8,${encodeURIComponent(GIRL_AVATAR_SVG)}`;
+
+        const getStudentAvatarDataUrl = (st) => {
+            return getStudentGender(st) === 'female' ? GIRL_AVATAR_DATA_URL : BOY_AVATAR_DATA_URL;
+        };
+
+        const loadPosterImage = (src) => new Promise((resolve) => {
+            if (!src) return resolve(null);
+            const img = new Image();
+            let done = false;
+            img.crossOrigin = 'anonymous';
+            const timer = setTimeout(() => {
+                if (!done) {
+                    done = true;
+                    resolve(null);
+                }
+            }, 3000);
+            img.onload = () => {
+                if (!done) {
+                    done = true;
+                    clearTimeout(timer);
+                    resolve(img);
+                }
+            };
+            img.onerror = () => {
+                if (!done) {
+                    done = true;
+                    clearTimeout(timer);
+                    resolve(null);
+                }
+            };
+            img.src = src;
+        });
+
+        const drawRoundedRect = (ctx, x, y, width, height, radius, fillStyle = null, strokeStyle = null, lineWidth = 1) => {
+            ctx.save();
+            ctx.beginPath();
+            if (typeof ctx.roundRect === 'function') {
+                ctx.roundRect(x, y, width, height, radius);
+            } else {
+                ctx.moveTo(x + radius, y);
+                ctx.lineTo(x + width - radius, y);
+                ctx.quadraticCurveTo(x + width, y, x + width, y + radius);
+                ctx.lineTo(x + width, y + height - radius);
+                ctx.quadraticCurveTo(x + width, y + height, x + width - radius, y + height);
+                ctx.lineTo(x + radius, y + height);
+                ctx.quadraticCurveTo(x, y + height, x, y + height - radius);
+                ctx.lineTo(x, y + radius);
+                ctx.quadraticCurveTo(x, y, x + radius, y);
+            }
+            ctx.closePath();
+            if (fillStyle) {
+                ctx.fillStyle = fillStyle;
+                ctx.fill();
+            }
+            if (strokeStyle) {
+                ctx.strokeStyle = strokeStyle;
+                ctx.lineWidth = lineWidth;
+                ctx.stroke();
+            }
+            ctx.restore();
+        };
+
+        const syncResultTabVisibility = (showResults = false) => {
+            const navItem = document.getElementById('results-nav-item');
+            const bottomBtn = document.getElementById('results-bottom-btn');
+            navItem?.classList.remove('hidden');
+            bottomBtn?.classList.remove('hidden');
+        };
+
+        const getStudentResultExamKey = (result = {}) => result.examType || result.examKey || String(result.examId || '').split('::').pop() || '';
+        const getStudentResultSchema = (result = {}, activeYear = '') => resultSchemas.find((item) => item.id === result.schemaId)
+            || resultSchemas.find((item) => item.academicYear === (result.academicYear || activeYear) && item.classLabel === result.classLabel)
+            || resultSchemas.find((item) => item.classLabel === result.classLabel);
+        const getStudentResultExamLabel = (result = {}) => {
+            const examKey = getStudentResultExamKey(result);
+            const schema = getStudentResultSchema(result, result.academicYear || '');
+            return result.examLabel || schema?.examConfigs?.[examKey]?.label || examLabels[examKey] || examKey || result.examId || 'Exam';
+        };
+
         const buildResultPosterBlob = async (result, cardEl = null) => {
             const conf = window.institutionConfig || {};
-            const examLabel = result.examLabel || examLabels[result.examType || result.examKey] || result.examType || 'Exam';
+            const activeYear = result.academicYear || studentProfile?.academicYear || selectedResultAcademicYear || '--';
+            const schema = getStudentResultSchema(result, activeYear);
+            const examKey = getStudentResultExamKey(result);
+            const rawExamLabel = getStudentResultExamLabel(result);
+            const examLabel = stringifyResultLabel(rawExamLabel, examLabels[examKey] || examKey || 'Exam');
             const classLabel = result.classLabel || studentProfile?.class || '--';
-            const showMarks = result.showMarksToStudents !== false;
-            const showGrades = true;
+            const admNo = studentProfile?.adm || studentProfile?.admNo || studentProfile?.admissionNo || result.admNo || '--';
+            const rollNo = studentProfile?.rollNo || result.rollNo || '--';
+            const studentName = studentProfile?.name || 'Student';
+
+            const visibilityKey = `${classLabel}__${examKey}`;
+            const rawVisibility = resultCenterSettings.resultVisibilityMap?.[visibilityKey];
+            const visibility = rawVisibility && typeof rawVisibility === 'object'
+                ? { marks: rawVisibility.marks !== false, grades: rawVisibility.grades !== false }
+                : { marks: rawVisibility !== false, grades: rawVisibility !== false };
+            const examConfigShowMarks = schema?.examConfigs?.[examKey]?.showMarksToStudents === true;
+            const showMarks = result.showMarksToStudents === false
+                ? false
+                : (visibility.marks && (result.showMarksToStudents === true || examConfigShowMarks));
+            const showGrades = visibility.grades !== false;
+
             const subjectKeys = Object.keys(result.grades || result.marks || {});
-            const colLabels = ['Subject', ...(showMarks ? ['Mark'] : []), ...(showGrades ? ['Grade'] : [])];
-            const colWidth = [420, ...(showMarks ? [140] : []), ...(showGrades ? [140] : [])];
-            const rowHeight = 48;
-            const headerHeight = 330;
-            const summaryHeight = 210;
-            const tableHeight = 62 + (Math.max(1, subjectKeys.length) * rowHeight);
+            const subjectCount = Math.max(1, subjectKeys.length);
+
+            // Dynamic heights calculation
             const designWidth = 1080;
-            const designHeight = Math.max(1080, headerHeight + tableHeight + summaryHeight + 70);
+            const rowHeight = 46;
+            const tableHeadHeight = 50;
+            const tableTotalHeight = 48;
+            const tableHeight = tableHeadHeight + (subjectCount * rowHeight) + tableTotalHeight;
+            const headerHeight = 220;
+            const ribbonHeight = 52;
+            const studentCardHeight = 154;
+            const summaryHeight = 120;
+            const footerHeight = 80;
+            const paddings = 160;
+
+            const designHeight = Math.max(1200, headerHeight + ribbonHeight + studentCardHeight + tableHeight + summaryHeight + footerHeight + paddings);
             const pixelRatio = 2;
+
             const canvas = document.createElement('canvas');
             canvas.width = designWidth * pixelRatio;
             canvas.height = designHeight * pixelRatio;
@@ -1531,104 +1675,401 @@ window.AppSession?.guardStudentPage?.();
             canvas.style.height = `${designHeight}px`;
             const ctx = canvas.getContext('2d');
             ctx.scale(pixelRatio, pixelRatio);
-            ctx.fillStyle = '#ffffff';
+
+            // 1. Clean Canvas Background & Outer Border
+            ctx.fillStyle = '#f8fafc';
             ctx.fillRect(0, 0, designWidth, designHeight);
+
+            // Outer decorative frame
+            const frameMargin = 24;
+            drawRoundedRect(ctx, frameMargin, frameMargin, designWidth - (frameMargin * 2), designHeight - (frameMargin * 2), 24, '#ffffff', '#cbd5e1', 2);
+
+            // 2. Top Header Banner
+            const bannerX = frameMargin;
+            const bannerY = frameMargin;
+            const bannerW = designWidth - (frameMargin * 2);
+            const bannerH = headerHeight;
+
+            // Header gradient
+            const headGrad = ctx.createLinearGradient(bannerX, bannerY, bannerX + bannerW, bannerY + bannerH);
+            headGrad.addColorStop(0, '#0f172a');
+            headGrad.addColorStop(0.5, '#1e1b4b');
+            headGrad.addColorStop(1, '#1e3a8a');
+
+            ctx.save();
+            ctx.beginPath();
+            if (typeof ctx.roundRect === 'function') {
+                ctx.roundRect(bannerX, bannerY, bannerW, bannerH, [22, 22, 0, 0]);
+            } else {
+                ctx.rect(bannerX, bannerY, bannerW, bannerH);
+            }
+            ctx.fillStyle = headGrad;
+            ctx.fill();
+            ctx.restore();
+
+            // Golden bottom accent line for header
+            ctx.fillStyle = '#f59e0b';
+            ctx.fillRect(bannerX, bannerY + bannerH - 5, bannerW, 5);
+
+            // Institution Details
+            const institutionName = conf.appName || conf.institutionName || document.getElementById('header-title')?.textContent?.trim() || 'ACADEMIC INSTITUTION';
             const regAndPlace = [conf.place || '', conf.regNo ? `Reg No: ${conf.regNo}` : ''].filter(Boolean).join(' • ');
-            const institutionName = conf.appName || conf.institutionName || document.getElementById('header-title')?.textContent?.trim() || 'Institution';
 
-            const grad = ctx.createLinearGradient(0, 0, designWidth, 280);
-            grad.addColorStop(0, '#312e81');
-            grad.addColorStop(1, '#0f766e');
-            ctx.fillStyle = grad;
-            ctx.fillRect(0, 0, designWidth, 250);
-            ctx.fillStyle = '#ffffff';
-            ctx.textAlign = 'center';
-            ctx.font = '800 42px Arial';
-            ctx.fillText(institutionName, designWidth / 2, 70);
-            ctx.font = '600 22px Arial';
-            ctx.fillStyle = '#e2e8f0';
-            ctx.fillText(regAndPlace || '--', designWidth / 2, 106);
-            ctx.font = '900 52px Arial';
-            ctx.fillStyle = '#ffffff';
-            ctx.fillText(studentProfile?.name || 'Student', designWidth / 2, 175);
-            ctx.font = '700 28px Arial';
-            ctx.fillStyle = '#dbeafe';
-            ctx.fillText(`Class: ${classLabel}  |  Exam: ${examLabel}`, designWidth / 2, 216);
-            ctx.strokeStyle = '#cbd5e1';
-            ctx.lineWidth = 2;
-            ctx.beginPath(); ctx.moveTo(60, 262); ctx.lineTo(designWidth - 60, 262); ctx.stroke();
+            // Try loading Institution Logo
+            const headerLogoSrc = sanitizeUrl(document.getElementById('header-logo')?.getAttribute('src')) || 'assets/images/logo.png';
+            const logoImg = await loadPosterImage(headerLogoSrc);
 
-            let y = 265;
-            let x = 120;
+            let headerTextLeft = bannerX + 40;
+            if (logoImg) {
+                const logoSize = 100;
+                const logoX = bannerX + 50;
+                const logoY = bannerY + ((bannerH - logoSize) / 2) - 4;
+                ctx.save();
+                ctx.beginPath();
+                ctx.arc(logoX + (logoSize / 2), logoY + (logoSize / 2), (logoSize / 2) + 4, 0, Math.PI * 2);
+                ctx.fillStyle = '#ffffff';
+                ctx.fill();
+                ctx.strokeStyle = '#f59e0b';
+                ctx.lineWidth = 3;
+                ctx.stroke();
+
+                ctx.beginPath();
+                ctx.arc(logoX + (logoSize / 2), logoY + (logoSize / 2), logoSize / 2, 0, Math.PI * 2);
+                ctx.clip();
+                ctx.drawImage(logoImg, logoX, logoY, logoSize, logoSize);
+                ctx.restore();
+                headerTextLeft = logoX + logoSize + 40;
+            }
+
+            // Header Texts
             ctx.textAlign = 'left';
-            colLabels.forEach((label, idx) => {
-                ctx.fillStyle = '#1f2937';
-                ctx.font = '700 20px Arial';
-                ctx.fillText(label, x + 10, y);
-                x += colWidth[idx];
-            });
-            y += 18;
-            ctx.strokeStyle = '#d1d5db';
-            ctx.beginPath(); ctx.moveTo(90, y); ctx.lineTo(canvas.width - 90, y); ctx.stroke();
+            ctx.fillStyle = '#ffffff';
+            ctx.font = '800 36px Arial, sans-serif';
+            ctx.fillText(institutionName, headerTextLeft, bannerY + 70);
 
-            const rows = subjectKeys.length ? subjectKeys : ['--'];
-            rows.forEach((key, rowIdx) => {
-                const markValue = key === '--' ? '-' : displayResultMark(result.marks?.[key]);
-                const gradeValue = key === '--' ? '-' : computeDisplayGrade(markValue, Number(result.marks?.[key]?.maxMarks || 100));
-                const isFailed = String(gradeValue).trim().toUpperCase() === 'F' || String(result.marks?.[key]?.status || '').toUpperCase() === 'FAIL';
-                const rowData = [key === '--' ? 'No subject entries' : resolveSubjectLabel(null, key), ...(showMarks ? [markValue] : []), ...(showGrades ? [gradeValue] : [])];
-                const rowY = y + 36 + (rowIdx * rowHeight);
-                let colX = 120;
-                rowData.forEach((cell, idx) => {
-                    ctx.fillStyle = (isFailed && idx > 0) ? '#dc2626' : (idx === 0 ? '#111827' : '#374151');
-                    ctx.font = idx === 0 ? '600 18px Arial' : '500 18px Arial';
-                    ctx.fillText(String(cell), colX + 10, rowY);
-                    colX += colWidth[idx];
-                });
-                ctx.strokeStyle = '#e5e7eb';
-                ctx.beginPath(); ctx.moveTo(110, rowY + 16); ctx.lineTo(designWidth - 110, rowY + 16); ctx.stroke();
+            if (regAndPlace) {
+                ctx.font = '600 20px Arial, sans-serif';
+                ctx.fillStyle = '#93c5fd';
+                ctx.fillText(regAndPlace, headerTextLeft, bannerY + 105);
+            }
+
+            ctx.font = '800 16px Arial, sans-serif';
+            ctx.fillStyle = '#fef08a';
+            ctx.fillText('OFFICIAL EXAMINATION RESULT', headerTextLeft, bannerY + 140);
+
+            // 3. Exam & Academic Year Ribbon
+            let currentY = bannerY + bannerH + 18;
+            const contentX = 50;
+            const contentW = designWidth - 100;
+
+            drawRoundedRect(ctx, contentX, currentY, contentW, ribbonHeight, 12, '#eff6ff', '#bfdbfe', 1.5);
+            ctx.textAlign = 'center';
+            ctx.font = '800 22px Arial, sans-serif';
+            ctx.fillStyle = '#1e3a8a';
+            ctx.fillText(`${examLabel.toUpperCase()}  •  ACADEMIC YEAR: ${activeYear}`, designWidth / 2, currentY + 33);
+
+            // 4. Student Profile Card
+            currentY += ribbonHeight + 18;
+            drawRoundedRect(ctx, contentX, currentY, contentW, studentCardHeight, 16, '#f8fafc', '#e2e8f0', 1.5);
+
+            // Photo or Gender-based Avatar
+            const photoSrc = studentProfile?.photo || result.photo || '';
+            let profileImg = null;
+            if (photoSrc) {
+                profileImg = await loadPosterImage(photoSrc);
+            }
+            if (!profileImg) {
+                const avatarDataUrl = getStudentAvatarDataUrl(studentProfile);
+                profileImg = await loadPosterImage(avatarDataUrl);
+            }
+
+            const avatarRadius = 54;
+            const avatarCx = contentX + 80;
+            const avatarCy = currentY + (studentCardHeight / 2);
+
+            if (profileImg) {
+                ctx.save();
+                ctx.beginPath();
+                ctx.arc(avatarCx, avatarCy, avatarRadius, 0, Math.PI * 2);
+                ctx.fillStyle = '#ffffff';
+                ctx.fill();
+                ctx.clip();
+                ctx.drawImage(profileImg, avatarCx - avatarRadius, avatarCy - avatarRadius, avatarRadius * 2, avatarRadius * 2);
+                ctx.restore();
+
+                // Ring around photo
+                ctx.save();
+                ctx.beginPath();
+                ctx.arc(avatarCx, avatarCy, avatarRadius, 0, Math.PI * 2);
+                ctx.strokeStyle = '#3b82f6';
+                ctx.lineWidth = 3.5;
+                ctx.stroke();
+                ctx.restore();
+            }
+
+            // Student Name and Details
+            const infoLeft = contentX + 160;
+            ctx.textAlign = 'left';
+            ctx.fillStyle = '#0f172a';
+            ctx.font = '800 30px Arial, sans-serif';
+            ctx.fillText(studentName, infoLeft, currentY + 46);
+
+            // Metadata Row 1: Class and Adm No
+            ctx.font = '600 19px Arial, sans-serif';
+            ctx.fillStyle = '#475569';
+            ctx.fillText(`Class: `, infoLeft, currentY + 84);
+            ctx.font = '700 19px Arial, sans-serif';
+            ctx.fillStyle = '#1e293b';
+            ctx.fillText(classLabel, infoLeft + 60, currentY + 84);
+
+            const admLeft = infoLeft + 280;
+            ctx.font = '600 19px Arial, sans-serif';
+            ctx.fillStyle = '#475569';
+            ctx.fillText(`Adm No: `, admLeft, currentY + 84);
+            ctx.font = '700 19px Arial, sans-serif';
+            ctx.fillStyle = '#1e293b';
+            ctx.fillText(String(admNo), admLeft + 80, currentY + 84);
+
+            // Metadata Row 2: Roll No and Gender
+            ctx.font = '600 19px Arial, sans-serif';
+            ctx.fillStyle = '#475569';
+            ctx.fillText(`Roll No: `, infoLeft, currentY + 120);
+            ctx.font = '700 19px Arial, sans-serif';
+            ctx.fillStyle = '#1e293b';
+            ctx.fillText(String(rollNo), infoLeft + 80, currentY + 120);
+
+            const genderText = (studentProfile?.gender || '--').toUpperCase();
+            ctx.font = '600 19px Arial, sans-serif';
+            ctx.fillStyle = '#475569';
+            ctx.fillText(`Gender: `, admLeft, currentY + 120);
+            ctx.font = '700 19px Arial, sans-serif';
+            ctx.fillStyle = '#1e293b';
+            ctx.fillText(genderText, admLeft + 80, currentY + 120);
+
+            // 5. Subject Table
+            currentY += studentCardHeight + 22;
+
+            // Columns setup
+            const showMarkCols = showMarks;
+            const showGradeCols = showGrades;
+            let colSlW = 70;
+            let colMarkW = showMarkCols ? 180 : 0;
+            let colGradeW = showGradeCols ? 160 : 0;
+            let colSubjW = contentW - colSlW - colMarkW - colGradeW;
+
+            // Table Header Background
+            drawRoundedRect(ctx, contentX, currentY, contentW, tableHeadHeight, 10, '#1e293b', '#0f172a', 1);
+            ctx.textAlign = 'center';
+            ctx.fillStyle = '#ffffff';
+            ctx.font = '700 18px Arial, sans-serif';
+            ctx.fillText('#', contentX + (colSlW / 2), currentY + 31);
+
+            ctx.textAlign = 'left';
+            ctx.fillText('SUBJECT', contentX + colSlW + 20, currentY + 31);
+
+            if (showMarkCols) {
+                ctx.textAlign = 'center';
+                ctx.fillText('MARKS', contentX + colSlW + colSubjW + (colMarkW / 2), currentY + 31);
+            }
+            if (showGradeCols) {
+                ctx.textAlign = 'center';
+                ctx.fillText('GRADE', contentX + colSlW + colSubjW + colMarkW + (colGradeW / 2), currentY + 31);
+            }
+
+            // Table Rows
+            let rowY = currentY + tableHeadHeight;
+            let totalObtainedMarks = 0;
+            let totalMaxMarks = 0;
+
+            const rowsToDraw = subjectKeys.length ? subjectKeys : ['--'];
+            rowsToDraw.forEach((key, idx) => {
+                const isEven = idx % 2 === 0;
+                ctx.fillStyle = isEven ? '#ffffff' : '#f8fafc';
+                ctx.fillRect(contentX, rowY, contentW, rowHeight);
+
+                // Row borders
+                ctx.strokeStyle = '#e2e8f0';
+                ctx.lineWidth = 1;
+                ctx.beginPath();
+                ctx.moveTo(contentX, rowY + rowHeight);
+                ctx.lineTo(contentX + contentW, rowY + rowHeight);
+                ctx.stroke();
+
+                // Values
+                const markObj = result.marks?.[key];
+                const markValue = key === '--' ? '-' : displayResultMark(markObj);
+                const maxVal = Number(markObj?.maxMarks || 100);
+                const gradeValue = key === '--' ? '-' : computeDisplayGrade(markValue, maxVal);
+                const isFailed = String(gradeValue).trim().toUpperCase() === 'F' || String(markObj?.status || '').toUpperCase() === 'FAIL';
+
+                const numObtained = Number(markValue);
+                if (Number.isFinite(numObtained)) {
+                    totalObtainedMarks += numObtained;
+                    totalMaxMarks += maxVal;
+                }
+
+                // Draw #
+                ctx.textAlign = 'center';
+                ctx.font = '600 17px Arial, sans-serif';
+                ctx.fillStyle = '#64748b';
+                ctx.fillText(key === '--' ? '-' : String(idx + 1), contentX + (colSlW / 2), rowY + 29);
+
+                // Draw Subject Name
+                ctx.textAlign = 'left';
+                ctx.font = '600 18px Arial, sans-serif';
+                ctx.fillStyle = '#0f172a';
+                const subjectTitle = key === '--' ? 'No subject entries' : resolveSubjectLabel(schema, key);
+                ctx.fillText(subjectTitle, contentX + colSlW + 20, rowY + 29);
+
+                // Draw Marks
+                if (showMarkCols) {
+                    ctx.textAlign = 'center';
+                    ctx.font = '700 18px Arial, sans-serif';
+                    ctx.fillStyle = isFailed ? '#dc2626' : '#1e293b';
+                    const markText = key === '--' ? '-' : (markObj?.maxMarks ? `${markValue} / ${markObj.maxMarks}` : `${markValue}`);
+                    ctx.fillText(markText, contentX + colSlW + colSubjW + (colMarkW / 2), rowY + 29);
+                }
+
+                // Draw Grade
+                if (showGradeCols) {
+                    ctx.textAlign = 'center';
+                    ctx.font = '800 19px Arial, sans-serif';
+                    if (isFailed) ctx.fillStyle = '#dc2626';
+                    else if (String(gradeValue).startsWith('A')) ctx.fillStyle = '#059669';
+                    else if (String(gradeValue).startsWith('B')) ctx.fillStyle = '#2563eb';
+                    else ctx.fillStyle = '#d97706';
+                    ctx.fillText(String(gradeValue), contentX + colSlW + colSubjW + colMarkW + (colGradeW / 2), rowY + 29);
+                }
+
+                rowY += rowHeight;
             });
 
-            const summaryY = headerHeight + tableHeight + 20;
-            const cards = [
-                `Total\n${result.totals?.obtained ?? '-'} / ${result.totals?.maximum ?? '-'}`,
-                `Attendance\n${result.attendance?.presentDays ?? 0} / ${result.attendance?.workingDays ?? 0}`,
-                `Status\n${result.totals?.passStatus || '--'}`
+            // Table Total Row
+            ctx.fillStyle = '#f1f5f9';
+            ctx.fillRect(contentX, rowY, contentW, tableTotalHeight);
+            ctx.strokeStyle = '#94a3b8';
+            ctx.lineWidth = 1.5;
+            ctx.beginPath();
+            ctx.moveTo(contentX, rowY);
+            ctx.lineTo(contentX + contentW, rowY);
+            ctx.moveTo(contentX, rowY + tableTotalHeight);
+            ctx.lineTo(contentX + contentW, rowY + tableTotalHeight);
+            ctx.stroke();
+
+            ctx.textAlign = 'left';
+            ctx.font = '800 18px Arial, sans-serif';
+            ctx.fillStyle = '#0f172a';
+            ctx.fillText('TOTAL MARKS', contentX + colSlW + 20, rowY + 30);
+
+            const displayTotObtained = result.totals?.obtained ?? (totalObtainedMarks || '-');
+            const displayTotMax = result.totals?.maximum ?? (totalMaxMarks || '-');
+
+            if (showMarkCols) {
+                ctx.textAlign = 'center';
+                ctx.font = '800 18px Arial, sans-serif';
+                ctx.fillStyle = '#0f172a';
+                ctx.fillText(`${displayTotObtained} / ${displayTotMax}`, contentX + colSlW + colSubjW + (colMarkW / 2), rowY + 30);
+            }
+
+            if (showGradeCols) {
+                ctx.textAlign = 'center';
+                ctx.font = '800 19px Arial, sans-serif';
+                const passStatus = result.totals?.passStatus || (result.totals?.status || '--');
+                ctx.fillStyle = passStatus === 'PASS' ? '#059669' : (passStatus === 'FAIL' ? '#dc2626' : '#1e3a8a');
+                ctx.fillText(passStatus, contentX + colSlW + colSubjW + colMarkW + (colGradeW / 2), rowY + 30);
+            }
+
+            rowY += tableTotalHeight;
+
+            // 6. Metric Summary Cards
+            currentY = rowY + 24;
+            const cardGap = 16;
+            const cardW = (contentW - (cardGap * 3)) / 4;
+            const cardH = summaryHeight;
+
+            let percentageText = '--';
+            if (Number(displayTotMax) > 0 && Number(displayTotObtained) >= 0) {
+                percentageText = `${((Number(displayTotObtained) / Number(displayTotMax)) * 100).toFixed(1)}%`;
+            }
+
+            const metricCards = [
+                { title: 'TOTAL MARKS', value: `${displayTotObtained} / ${displayTotMax}`, color: '#1e3a8a', bg: '#eff6ff', border: '#bfdbfe' },
+                { title: 'PERCENTAGE', value: percentageText, color: '#0d9488', bg: '#f0fdfa', border: '#99f6e4' },
+                { title: 'ATTENDANCE', value: `${result.attendance?.presentDays ?? 0} / ${result.attendance?.workingDays ?? 0} Days`, color: '#6366f1', bg: '#eef2ff', border: '#c7d2fe' },
+                { 
+                    title: 'RESULT STATUS', 
+                    value: result.totals?.passStatus || (result.totals?.status || '--'), 
+                    color: result.totals?.passStatus === 'PASS' ? '#059669' : '#dc2626', 
+                    bg: result.totals?.passStatus === 'PASS' ? '#ecfdf5' : '#fef2f2', 
+                    border: result.totals?.passStatus === 'PASS' ? '#a7f3d0' : '#fecaca' 
+                }
             ];
-            cards.forEach((text, idx) => {
-                const cardX = 110 + (idx * 290);
-                ctx.fillStyle = '#f8fafc';
-                ctx.fillRect(cardX, summaryY, 250, 130);
-                ctx.strokeStyle = '#e5e7eb';
-                ctx.strokeRect(cardX, summaryY, 250, 130);
-                const [title, value] = text.split('\n');
-                ctx.fillStyle = '#6b7280';
-                ctx.font = '700 18px Arial';
-                ctx.fillText(title, cardX + 14, summaryY + 34);
-                ctx.fillStyle = '#111827';
-                ctx.font = '800 24px Arial';
-                ctx.fillText(value, cardX + 14, summaryY + 78);
+
+            metricCards.forEach((card, idx) => {
+                const cX = contentX + (idx * (cardW + cardGap));
+                drawRoundedRect(ctx, cX, currentY, cardW, cardH, 14, card.bg, card.border, 1.5);
+                ctx.textAlign = 'center';
+                ctx.font = '700 15px Arial, sans-serif';
+                ctx.fillStyle = '#64748b';
+                ctx.fillText(card.title, cX + (cardW / 2), currentY + 38);
+
+                ctx.font = '800 22px Arial, sans-serif';
+                ctx.fillStyle = card.color;
+                ctx.fillText(card.value, cX + (cardW / 2), currentY + 78);
             });
+
+            // 7. Footer Section
+            const footerY = currentY + cardH + 28;
+            ctx.strokeStyle = '#e2e8f0';
+            ctx.lineWidth = 1.5;
+            ctx.beginPath();
+            ctx.moveTo(contentX, footerY);
+            ctx.lineTo(contentX + contentW, footerY);
+            ctx.stroke();
+
+            const dateStr = new Date().toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' });
+            ctx.textAlign = 'left';
+            ctx.font = '600 16px Arial, sans-serif';
+            ctx.fillStyle = '#64748b';
+            ctx.fillText(`Issued: ${dateStr}`, contentX, footerY + 35);
+
+            ctx.textAlign = 'center';
+            ctx.font = 'italic 700 20px Georgia, serif';
+            ctx.fillStyle = '#1e3a8a';
+            ctx.fillText('Alhamdulillah', designWidth / 2, footerY + 35);
+
+            ctx.textAlign = 'right';
+            ctx.font = '700 16px Arial, sans-serif';
+            ctx.fillStyle = '#0f766e';
+            ctx.fillText('Authorized Student Report', contentX + contentW, footerY + 35);
+
             const blob = await new Promise((resolve) => canvas.toBlob(resolve, 'image/png'));
             if (!blob) throw new Error('Failed to generate image blob');
             return blob;
         };
+
         const downloadRankPoster = async (result, cardEl = null) => {
             const blob = await buildResultPosterBlob(result, cardEl);
+            const studentName = studentProfile?.name || 'student';
+            const examKey = getStudentResultExamKey(result) || 'exam';
             const anchor = document.createElement('a');
             anchor.href = URL.createObjectURL(blob);
-            anchor.download = `result_card_${(studentProfile?.name || 'student').replace(/\s+/g, '_')}_${result.examType || 'exam'}.png`;
+            anchor.download = `result_poster_${studentName.replace(/\s+/g, '_')}_${examKey}.png`;
             anchor.click();
             setTimeout(() => URL.revokeObjectURL(anchor.href), 1500);
         };
+
         const shareRankPoster = async (result, cardEl = null) => {
             const blob = await buildResultPosterBlob(result, cardEl);
-            const fileName = `result_card_${(studentProfile?.name || 'student').replace(/\s+/g, '_')}_${result.examType || 'exam'}.png`;
+            const studentName = studentProfile?.name || 'student';
+            const examLabel = result.examLabel || examLabels[result.examType || result.examKey] || result.examType || 'Exam';
+            const examKey = getStudentResultExamKey(result) || 'exam';
+            const fileName = `result_poster_${studentName.replace(/\s+/g, '_')}_${examKey}.png`;
             const imageFile = new File([blob], fileName, { type: 'image/png' });
             if (navigator.share && navigator.canShare?.({ files: [imageFile] })) {
                 await navigator.share({
-                    title: `${studentProfile?.name || 'Student'} - ${result.examLabel || examLabels[result.examType] || 'Exam Result'}`,
-                    text: 'Result card',
+                    title: `${studentName} - ${examLabel} Result`,
+                    text: 'Alhamdulillah',
                     files: [imageFile]
                 });
                 return;
@@ -1638,22 +2079,6 @@ window.AppSession?.guardStudentPage?.();
             anchor.download = fileName;
             anchor.click();
             setTimeout(() => URL.revokeObjectURL(anchor.href), 1500);
-        };
-
-        const syncResultTabVisibility = (showResults = false) => {
-            const navItem = document.getElementById('results-nav-item');
-            const bottomBtn = document.getElementById('results-bottom-btn');
-            navItem?.classList.remove('hidden');
-            bottomBtn?.classList.remove('hidden');
-        };
-        const getStudentResultExamKey = (result = {}) => result.examType || result.examKey || String(result.examId || '').split('::').pop() || '';
-        const getStudentResultSchema = (result = {}, activeYear = '') => resultSchemas.find((item) => item.id === result.schemaId)
-            || resultSchemas.find((item) => item.academicYear === (result.academicYear || activeYear) && item.classLabel === result.classLabel)
-            || resultSchemas.find((item) => item.classLabel === result.classLabel);
-        const getStudentResultExamLabel = (result = {}) => {
-            const examKey = getStudentResultExamKey(result);
-            const schema = getStudentResultSchema(result, result.academicYear || '');
-            return result.examLabel || schema?.examConfigs?.[examKey]?.label || examLabels[examKey] || examKey || result.examId || 'Exam';
         };
 
         const renderStudentResults = (profile, results = [], targetYear = '') => {
@@ -1677,17 +2102,20 @@ window.AppSession?.guardStudentPage?.();
             const examSelect = document.getElementById('results-exam-select');
             const examOptions = [...new Set(filteredResults.map((result) => getStudentResultExamKey(result)))].filter(Boolean);
             if (examSelect) {
-                const defaultExam = '';
-                const prev = examOptions.includes(examSelect.value) ? examSelect.value : defaultExam;
-                examSelect.innerHTML = `<option value="">All Exams</option>${examOptions.map((exam) => {
-                    const rawLabel = getStudentResultExamLabel(filteredResults.find((row) => getStudentResultExamKey(row) === exam) || { examKey: exam });
-                    const label = stringifyResultLabel(rawLabel, examLabels[exam] || exam);
-                    return `<option value="${escapeHtml(exam)}">${escapeHtml(label)}</option>`;
-                }).join('')}`;
-                examSelect.value = prev;
+                if (examOptions.length > 0) {
+                    const prev = examOptions.includes(examSelect.value) ? examSelect.value : examOptions[0];
+                    examSelect.innerHTML = examOptions.map((exam) => {
+                        const rawLabel = getStudentResultExamLabel(filteredResults.find((row) => getStudentResultExamKey(row) === exam) || { examKey: exam });
+                        const label = stringifyResultLabel(rawLabel, examLabels[exam] || exam);
+                        return `<option value="${escapeHtml(exam)}">${escapeHtml(label)}</option>`;
+                    }).join('');
+                    examSelect.value = prev;
+                } else {
+                    examSelect.innerHTML = '<option value="">No Exams Available</option>';
+                }
             }
-            const selectedExam = examSelect?.value || '';
-            const examScopedResults = selectedExam ? filteredResults.filter((result) => getStudentResultExamKey(result) === selectedExam) : filteredResults;
+            const selectedExam = examSelect?.value || (examOptions[0] || '');
+            const examScopedResults = selectedExam ? filteredResults.filter((result) => getStudentResultExamKey(result) === selectedExam) : [];
             
             const publishTs = resultCenterSettings.publishAt ? new Date(resultCenterSettings.publishAt).getTime() : 0;
             const shouldShowCountdown = Number.isFinite(publishTs) && publishTs > Date.now() && !filteredResults.length;
@@ -1777,6 +2205,7 @@ window.AppSession?.guardStudentPage?.();
                         .filter((item) => getStudentResultExamKey(item) === examKey)
                         .sort((a, b) => Number(b.totals?.obtained || 0) - Number(a.totals?.obtained || 0));
                     const currentRank = rankRows.findIndex((row) => row.studentId === result.studentId) + 1;
+                    const studentAvatar = studentProfile?.photo || getStudentAvatarDataUrl(studentProfile);
                     const tableRows = subjectKeys.map((key) => {
                         const markValue = displayResultMark(result.marks?.[key]);
                         const gradeValue = computeDisplayGrade(markValue, Number(result.marks?.[key]?.maxMarks || 100));
@@ -1792,14 +2221,19 @@ window.AppSession?.guardStudentPage?.();
                     const colCount = 1 + (showMarks ? 1 : 0) + (showGrades ? 1 : 0);
                     return `
                         <div class="border rounded-xl p-4 mb-4 bg-white shadow-sm">
-                            <div class="flex items-center justify-between mb-3">
-                                <h3 class="font-bold text-gray-900 text-center flex-1">${escapeHtml(stringifyResultLabel(getStudentResultExamLabel(result), 'Exam'))}</h3>
-                                <div class="flex items-center gap-3">
-                                    <button class="poster-download-btn text-indigo-700 font-bold" data-exam="${escapeHtml(examKey)}" data-rank="${currentRank}" title="Download Poster"><i class="fas fa-download"></i></button>
-                                    <button class="poster-share-btn text-indigo-700 font-bold" data-exam="${escapeHtml(examKey)}" title="Share Poster"><i class="fas fa-share-alt"></i></button>
+                            <div class="flex items-center justify-between mb-3 pb-3 border-b border-gray-100 gap-3">
+                                <div class="flex items-center gap-3 min-w-0">
+                                    <img src="${studentAvatar}" class="w-12 h-12 rounded-full object-cover border-2 border-indigo-200 shrink-0" alt="Student">
+                                    <div class="min-w-0">
+                                        <h3 class="font-extrabold text-gray-900 truncate">${escapeHtml(studentProfile?.name || 'Student')}</h3>
+                                        <div class="text-xs text-indigo-600 font-bold">${escapeHtml(stringifyResultLabel(getStudentResultExamLabel(result), 'Exam'))} • Class: ${escapeHtml(result.classLabel || classLabel)}</div>
+                                    </div>
+                                </div>
+                                <div class="flex items-center gap-2 shrink-0">
+                                    <button class="poster-download-btn px-3 py-1.5 bg-indigo-50 hover:bg-indigo-100 text-indigo-700 rounded-lg text-xs font-bold transition-colors" data-exam="${escapeHtml(examKey)}" data-rank="${currentRank}" title="Download Poster"><i class="fas fa-download mr-1"></i>Poster</button>
+                                    <button class="poster-share-btn px-3 py-1.5 bg-emerald-50 hover:bg-emerald-100 text-emerald-700 rounded-lg text-xs font-bold transition-colors" data-exam="${escapeHtml(examKey)}" title="Share Poster"><i class="fas fa-share-alt mr-1"></i>Share</button>
                                 </div>
                             </div>
-                            <div class="text-[12px] text-indigo-600 font-bold mb-2 uppercase tracking-wide text-center">Class - ${escapeHtml(result.classLabel || classLabel)}</div>
                             <table class="w-full text-left">
                                 <thead><tr class="text-xs uppercase text-gray-500 border-b"><th class="py-2">Subject</th>${showMarks ? '<th class="py-2">Mark</th>' : ''}${showGrades ? '<th class="py-2">Grade</th>' : ''}</tr></thead>
                                 <tbody>${tableRows || `<tr><td class="py-2 text-sm text-gray-500" colspan="${colCount}">No subject-wise entries.</td></tr>`}</tbody>
@@ -2208,8 +2642,9 @@ window.AppSession?.guardStudentPage?.();
                 if (avatarEl) avatarEl.innerHTML = `<img src="${userPhoto}" class="w-full h-full object-cover rounded-full" alt="Profile Photo">`;
                 if (viewerImg) viewerImg.src = userPhoto;
             } else {
+                const avatarSrc = getStudentAvatarDataUrl(st);
                 if (avatarEl) {
-                    avatarEl.innerHTML = st.name ? `<span class="text-3xl font-extrabold text-blue-600">${escapeHtml(st.name.charAt(0).toUpperCase())}</span>` : `<i class="fas fa-user text-3xl text-slate-400"></i>`;
+                    avatarEl.innerHTML = `<img src="${avatarSrc}" class="w-full h-full object-cover rounded-full p-1" alt="Student Avatar">`;
                 }
             }
 

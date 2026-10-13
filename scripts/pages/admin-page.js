@@ -1106,7 +1106,7 @@ const activateAdminPage = (targetId, options = {}) => {
         if(window.location.hash !== nextHash) history.pushState({ adminTab: targetId }, '', nextHash);
     }
     window.scrollTo({ top: 0, left: 0, behavior: 'auto' });
-    toggleDrawer(false);
+    if (!isDesktop()) toggleDrawer(false);
 };
 
 // Navigation
