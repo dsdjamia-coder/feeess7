@@ -1238,8 +1238,86 @@ const renderPublishedHistoryTable = () => {
         const targetTs = record.publishAt ? new Date(record.publishAt).getTime() : 0;
         const isLive = !isScheduled || (targetTs && targetTs <= now);
         const blockedList = Array.isArray(record.blockedClasses) ? record.blockedClasses : [];
-
         const isUnpublished = record.publishType === 'unpublished' || record.status === 'Unpublished';
+
+        // Match all student results for this exam in this academic year
+        const recYear = record.academicYear;
+        const recExamKey = record.examKey;
+        const matchingResults = examResultsCache.filter((row) => {
+            const matchesYear = !row.academicYear || row.academicYear === recYear;
+            const matchesExam = resultMatchesExam(row, recExamKey);
+            return matchesYear && matchesExam;
+        });
+
+        const livePublishedRows = matchingResults.filter((r) => r.published === true);
+        const draftRows = matchingResults.filter((r) => r.published !== true);
+        const draftsInOpenClasses = draftRows.filter((r) => !blockedList.includes(r.classLabel));
+        const draftsInBlockedClasses = draftRows.filter((r) => blockedList.includes(r.classLabel));
+
+        // Group by class to identify status for each class
+        const classStatsMap = {};
+        matchingResults.forEach((row) => {
+            const cls = row.classLabel || 'Unknown';
+            if (!classStatsMap[cls]) classStatsMap[cls] = { total: 0, published: 0, draft: 0 };
+            classStatsMap[cls].total++;
+            if (row.published === true) classStatsMap[cls].published++;
+            else classStatsMap[cls].draft++;
+        });
+
+        // Classes breakdown badges
+        const classBadges = [];
+        Object.entries(classStatsMap).forEach(([cls, stats]) => {
+            const isBlocked = blockedList.includes(cls);
+            if (isBlocked) {
+                classBadges.push(`<span class="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-bold bg-red-50 text-red-700 border border-red-200" title="Class is blocked from publishing"><i class="fas fa-ban text-[9px]"></i> ${escapeHtml(cls)} (Blocked: ${stats.draft} draft)</span>`);
+            } else if (stats.draft > 0) {
+                classBadges.push(`<span class="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-bold bg-amber-50 text-amber-800 border border-amber-300" title="Class has un-published drafts"><i class="fas fa-clock text-[9px]"></i> ${escapeHtml(cls)} (${stats.draft} draft pending)</span>`);
+            } else {
+                classBadges.push(`<span class="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-bold bg-emerald-50 text-emerald-700 border border-emerald-200" title="All results published"><i class="fas fa-check text-[9px]"></i> ${escapeHtml(cls)} (${stats.published} live)</span>`);
+            }
+        });
+
+        // Add any configured blocked classes that do not have student marks yet
+        blockedList.forEach((cls) => {
+            if (!classStatsMap[cls]) {
+                classBadges.push(`<span class="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-bold bg-red-50 text-red-700 border border-red-200"><i class="fas fa-ban text-[9px]"></i> ${escapeHtml(cls)} (Blocked)</span>`);
+            }
+        });
+
+        const classScopeHtml = classBadges.length
+            ? `<div class="flex flex-wrap gap-1 max-w-xs">${classBadges.join('')}</div>`
+            : `<span class="text-[11px] text-slate-400 italic">No class results entered</span>`;
+
+        // Live Students & Sync Status UI
+        const syncStatusHtml = `
+            <div class="space-y-1">
+                <div class="flex items-center gap-1.5 flex-wrap">
+                    <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[11px] font-extrabold bg-emerald-50 text-emerald-700 border border-emerald-200">
+                        <i class="fas fa-check-circle text-[10px]"></i> ${livePublishedRows.length} Live
+                    </span>
+                    ${draftsInOpenClasses.length > 0 ? `
+                        <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[11px] font-extrabold bg-amber-50 text-amber-800 border border-amber-300 animate-pulse" title="${draftsInOpenClasses.length} new draft results in open classes need publishing">
+                            <i class="fas fa-exclamation-triangle text-[10px]"></i> ${draftsInOpenClasses.length} Pending Drafts
+                        </span>
+                    ` : ''}
+                    ${draftsInBlockedClasses.length > 0 ? `
+                        <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[10px] font-bold bg-slate-100 text-slate-600 border border-slate-200" title="${draftsInBlockedClasses.length} drafts in blocked classes">
+                            ${draftsInBlockedClasses.length} in Blocked
+                        </span>
+                    ` : ''}
+                </div>
+                ${draftsInOpenClasses.length > 0 && !isUnpublished ? `
+                    <div class="text-[10px] text-amber-700 font-semibold flex items-center gap-1">
+                        <i class="fas fa-info-circle"></i> New marks entered; click 'Publish Pending' to sync
+                    </div>
+                ` : (draftsInOpenClasses.length === 0 && livePublishedRows.length > 0) ? `
+                    <div class="text-[10px] text-emerald-600 font-semibold flex items-center gap-1">
+                        <i class="fas fa-circle-check text-[9px]"></i> All open results synced & live
+                    </div>
+                ` : ''}
+            </div>
+        `;
+
         const modeBadge = isUnpublished
             ? `<span class="inline-flex items-center gap-1 px-2.5 py-1 rounded-md text-[11px] font-bold bg-slate-100 text-slate-600 border border-slate-200"><i class="fas fa-undo text-[10px]"></i> Reverted to Draft</span>`
             : isScheduled
@@ -1252,13 +1330,15 @@ const renderPublishedHistoryTable = () => {
             ? `<span class="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] font-bold bg-emerald-50 text-emerald-700 border border-emerald-200"><span class="w-1.5 h-1.5 rounded-full bg-emerald-500"></span> Live</span>`
             : `<span class="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] font-bold bg-amber-50 text-amber-700 border border-amber-200"><span class="w-1.5 h-1.5 rounded-full bg-amber-500 animate-pulse"></span> Countdown</span>`;
 
-        const blockedHtml = blockedList.length
-            ? `<div class="flex flex-wrap gap-1 max-w-xs">${blockedList.map((cls) => `<span class="px-1.5 py-0.5 rounded text-[10px] font-bold bg-red-50 text-red-700 border border-red-200">${escapeHtml(cls)}</span>`).join('')}</div>`
-            : `<span class="text-[11px] text-emerald-600 font-semibold flex items-center gap-1"><i class="fas fa-check-circle text-[10px]"></i> All Open (None Blocked)</span>`;
-
         const unpublishBtnHtml = !isUnpublished
             ? `<button type="button" class="unpublish-record-btn px-2.5 py-1.5 rounded-lg bg-amber-50 hover:bg-amber-100 text-amber-700 font-bold text-xs transition flex items-center gap-1" data-id="${escapeHtml(record.id)}" title="Unpublish results back to draft">
                     <i class="fas fa-undo"></i> Unpublish
+               </button>`
+            : '';
+
+        const publishPendingBtnHtml = (draftsInOpenClasses.length > 0 && !isUnpublished)
+            ? `<button type="button" class="publish-pending-record-btn px-2.5 py-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs transition flex items-center gap-1 shadow-sm" data-id="${escapeHtml(record.id)}" title="Publish all ${draftsInOpenClasses.length} new draft results in open classes">
+                    <i class="fas fa-bolt"></i> Publish ${draftsInOpenClasses.length} Pending
                </button>`
             : '';
 
@@ -1273,11 +1353,21 @@ const renderPublishedHistoryTable = () => {
                     <div class="font-bold text-slate-800 text-xs">${escapeHtml(record.examLabel || record.examKey || 'Exam')}</div>
                     <div class="text-[10px] text-slate-500 font-medium">${escapeHtml(record.examKey || '')}</div>
                 </td>
-                <td class="py-3 px-4 whitespace-nowrap">${modeBadge}</td>
-                <td class="py-3 px-4 whitespace-nowrap">${statusBadge}</td>
-                <td class="py-3 px-4">${blockedHtml}</td>
+                <td class="py-3 px-4 whitespace-nowrap">
+                    <div class="flex flex-col gap-1 items-start">
+                        ${statusBadge}
+                        ${modeBadge}
+                    </div>
+                </td>
+                <td class="py-3 px-4 whitespace-nowrap">
+                    ${syncStatusHtml}
+                </td>
+                <td class="py-3 px-4">
+                    ${classScopeHtml}
+                </td>
                 <td class="py-3 px-4 text-center whitespace-nowrap">
                     <div class="inline-flex items-center gap-1">
+                        ${publishPendingBtnHtml}
                         ${unpublishBtnHtml}
                         <button type="button" class="edit-publish-record-btn px-2.5 py-1.5 rounded-lg bg-indigo-50 hover:bg-indigo-100 text-indigo-700 font-bold text-xs transition flex items-center gap-1" data-id="${escapeHtml(record.id)}">
                             <i class="fas fa-edit"></i> Edit
@@ -2698,6 +2788,71 @@ const cancelEditingPublishRecord = () => {
     updatePublishLiveStatus();
 };
 
+const publishPendingExamDrafts = async (recordId) => {
+    if (roleScope !== 'admin') return alert('Only administrators can publish results.');
+    const record = getPublishHistoryRecords().find((r) => r.id === recordId);
+    if (!record) return alert('Publish record not found.');
+
+    const blockedList = Array.isArray(record.blockedClasses) ? record.blockedClasses : [];
+    const draftsToPublish = examResultsCache.filter((row) => {
+        if (row.published === true) return false;
+        const matchesYear = !row.academicYear || row.academicYear === record.academicYear;
+        const matchesExam = resultMatchesExam(row, record.examKey);
+        const isOpenClass = !blockedList.includes(row.classLabel);
+        return matchesYear && matchesExam && isOpenClass;
+    });
+
+    if (!draftsToPublish.length) {
+        return alert('No pending draft results found in open classes for this exam.');
+    }
+
+    const ok = await showAppConfirm({
+        title: 'Publish Pending Draft Results',
+        message: `Found ${draftsToPublish.length} pending draft result(s) in open classes for "${record.examLabel || record.examKey}" (${record.academicYear}).\n\nPublish them now so students can view their results immediately?`,
+        confirmText: `Publish ${draftsToPublish.length} Results`,
+        type: 'warning'
+    });
+    if (!ok) return;
+
+    await withBusyButton(null, 'Publishing...', async () => {
+        for (let i = 0; i < draftsToPublish.length; i += 400) {
+            const chunk = draftsToPublish.slice(i, i + 400);
+            const batch = writeBatch(db);
+            chunk.forEach((row) => {
+                batch.update(doc(db, `${BASE_PATH}/examResults`, row.id), {
+                    published: true,
+                    publishedAt: Date.now(),
+                    updatedAt: Date.now()
+                });
+            });
+            await batch.commit();
+        }
+
+        const history = Array.isArray(resultCenterSettings.publishHistory) ? [...resultCenterSettings.publishHistory] : [];
+        const idx = history.findIndex((r) => r.id === recordId);
+        if (idx >= 0) {
+            history[idx] = {
+                ...history[idx],
+                status: 'Live',
+                publishType: 'published',
+                publishedAt: new Date().toISOString(),
+                lastSyncedAt: Date.now(),
+                updatedAt: Date.now()
+            };
+            await setDoc(doc(db, `${BASE_PATH}/settings`, 'resultCenter'), {
+                publishHistory: history,
+                updatedAt: Date.now()
+            }, { merge: true });
+            resultCenterSettings.publishHistory = history;
+        }
+
+        renderPublishedHistoryTable();
+        renderPublishedDraftTables();
+        updateDashboard();
+        showToast(`Published ${draftsToPublish.length} pending result(s) successfully!`, 'success');
+    });
+};
+
 const unpublishExamResults = async (recordId) => {
     if (roleScope !== 'admin') return alert('Only admin can unpublish results.');
     const record = getPublishHistoryRecords().find((r) => r.id === recordId);
@@ -2995,6 +3150,12 @@ document.getElementById('clear-all-blocked-btn')?.addEventListener('click', () =
 
 // Published History Table Event Delegation
 document.getElementById('published-history-table-body')?.addEventListener('click', (e) => {
+    const publishPendingBtn = e.target.closest('.publish-pending-record-btn');
+    if (publishPendingBtn) {
+        const id = publishPendingBtn.dataset.id;
+        if (id) publishPendingExamDrafts(id);
+        return;
+    }
     const unpublishBtn = e.target.closest('.unpublish-record-btn');
     if (unpublishBtn) {
         const id = unpublishBtn.dataset.id;
