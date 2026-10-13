@@ -2157,73 +2157,6 @@ function handleExcelFile(file) {
                 admDate: ['admdate', 'dateofadmission', 'admissiondate', 'admnsdate', 'admldate', 'joiningdate', 'admissiondateddmmyyyy', 'admdateddmmyyyy'],
                 adhaar: ['aadhaar', 'adhaar', 'aadharno', 'aadhaarnumber', 'adhaarnumber', 'uidai'],
                 samastha: ['samastha', 'samasthaid', 'samasthano', 'regno', 'registrationno']
-            };
-            excelParsedData = rawData.map(row => {
-                const keys = Object.keys(row);
-                const getVal = (aliases = []) => {
-                    const key = keys.find((col) => {
-                        const norm = normalizeHeader(col);
-                        return aliases.includes(norm) || aliases.some(a => (norm.startsWith(a) && (norm.includes('date') || norm.includes('dob'))));
-                    });
-                    return key ? (row[key] !== undefined && row[key] !== null ? row[key] : '') : '';
-                };
-                const rawName = String(getVal(aliasMap.name) || '').trim();
-                const dobVal = normalizeToIsoDate(getVal(aliasMap.dob));
-                const admDateVal = normalizeToIsoDate(getVal(aliasMap.admDate));
-                const adhaarVal = String(getVal(aliasMap.adhaar) || '').trim();
-                const samasthaVal = String(getVal(aliasMap.samastha) || '').trim();
-                const motherVal = String(getVal(aliasMap.mother) || '').trim();
-                const motherMobileVal = String(getVal(aliasMap.motherMobile) || '').trim();
-                const admVal = String(getVal(aliasMap.adm) || '').toUpperCase().trim();
-                const uidVal = String(getVal(aliasMap.uid) || '').trim();
-                const fatherVal = String(getVal(aliasMap.father) || '').toUpperCase().trim();
-                const mobileVal = String(getVal(aliasMap.mobile) || '').trim();
-                const addressVal = String(getVal(aliasMap.address) || '').trim();
-                const statusVal = normalizeStudentStatus(String(getVal(aliasMap.status) || ''));
-                const genderRaw = String(getVal(aliasMap.gender) || '').toLowerCase().trim();
-                const genderVal = genderRaw.startsWith('f') ? 'Female' : 'Male';
-
-                return {
-                    academicYear: activeAcademicYear || currentAcademicYear,
-                    name: rawName ? rawName.toUpperCase().trim() : "",
-                    class: selectedBulkClass,
-                    studentClass: selectedBulkClass,
-                    status: statusVal,
-                    gender: genderVal,
-                    uid: uidVal,
-                    father: fatherVal,
-                    mother: motherVal.toUpperCase(),
-                    mobile: mobileVal,
-                    motherMobile: motherMobileVal,
-                    adm: admVal,
-                    address: addressVal,
-                    dob: dobVal,
-                    admDate: admDateVal,
-                    adm_date: admDateVal,
-                    adhaar: adhaarVal,
-                    samasthaId: samasthaVal,
-                    photo: '',
-                    profile: {
-                        dob: dobVal,
-                        address: addressVal,
-                        adhaar: adhaarVal,
-                        admNo: admVal,
-                        admDate: admDateVal,
-                        adm_date: admDateVal,
-                        samasthaId: samasthaVal,
-                        photo: '',
-                        uid: uidVal,
-                        father: fatherVal,
-                        mother: motherVal.toUpperCase(),
-                        mobile: mobileVal,
-                        motherMobile: motherMobileVal,
-                        status: statusVal
-                    }
-                };
-            }).filter(s => s.name);
-
-            document.getElementById('excel-record-count').textContent = `Found ${excelParsedData.length} valid records`;
-            
             // Analyze each row against the 15 standard student fields
             // Standard fields: 1.Photo, 2.Class, 3.UID, 4.Name*, 5.Father, 6.Mother, 7.Gender*, 8.Adm No, 9.DOB, 10.Adm Date, 11.Status, 12.Aadhaar, 13.Father Mobile, 14.Mother Mobile, 15.Address
             const existingClassStudents = students.filter(st => String(st.class || '').toUpperCase().trim() === selectedBulkClass);
@@ -2558,7 +2491,10 @@ function handleExcelFile(file) {
             document.getElementById('excel-preview-area').classList.remove('hidden');
             document.getElementById('upload-progress-bar').classList.add('hidden');
             document.getElementById('upload-status-text').textContent = "Ready to upload";
-        } catch(err) { console.error(err); alert("Error reading file."); }
+        } catch(err) { 
+            console.error("Error parsing Excel file:", err); 
+            alert("Error reading file: " + (err.message || err)); 
+        }
     };
     reader.readAsArrayBuffer(file);
 }
@@ -2699,71 +2635,98 @@ document.getElementById('skip-issues-upload-btn')?.addEventListener('click', asy
     await executeBulkImport(validRows, mergePolicy);
 });
 
-document.getElementById('add-manual-btn').addEventListener('click', async () => {
+document.getElementById('add-manual-btn')?.addEventListener('click', async () => {
     if(!requirePermission('students.manage')) return;
-    const cls = document.getElementById('add-stu-class').value.toUpperCase().trim(), name = document.getElementById('add-stu-name').value.toUpperCase().trim(), gender = document.getElementById('add-stu-gender').value;
+    const btn = document.getElementById('add-manual-btn');
+    const cls = (document.getElementById('add-stu-class')?.value || '').toUpperCase().trim();
+    const name = (document.getElementById('add-stu-name')?.value || '').toUpperCase().trim();
+    const gender = document.getElementById('add-stu-gender')?.value || 'Male';
     if(!cls || !name || !gender) return alert("Class, Name and Gender are mandatory.");
     if(!confirm("Are you sure you want to add this student?")) return;
 
-    const photoVal = document.getElementById('add-stu-photo').value.trim();
-    const dobVal = document.getElementById('add-stu-dob').value;
-    const admDateVal = document.getElementById('add-stu-adm-date').value;
-    const adhaarVal = document.getElementById('add-stu-adhaar').value.trim();
-    const samasthaVal = document.getElementById('add-stu-samastha').value.trim();
+    try {
+        if (btn) btn.disabled = true;
 
-    const nextStudent = {
-        academicYear: activeAcademicYear || currentAcademicYear,
-        class: cls,
-        studentClass: cls, // Save both for compatibility with React
-        name: name,
-        gender: gender,
-        status: normalizeStudentStatus(document.getElementById('add-stu-status').value),
-        uid: document.getElementById('add-stu-uid').value.trim(),
-        adm: document.getElementById('add-stu-adm').value.toUpperCase().trim(),
-        mobile: document.getElementById('add-stu-mobile').value.trim(),
-        father: document.getElementById('add-stu-father').value.toUpperCase().trim(),
-        mother: document.getElementById('add-stu-mother').value.toUpperCase().trim(),
-        motherMobile: document.getElementById('add-stu-mother-mobile').value.trim(),
-        address: document.getElementById('add-stu-address').value.trim(),
-        dob: dobVal,
-        admDate: admDateVal,
-        adm_date: admDateVal,
-        adhaar: adhaarVal,
-        samasthaId: samasthaVal,
-        photo: photoVal,
-        profile: {
+        const photoVal = document.getElementById('add-stu-photo')?.value?.trim() || '';
+        const dobVal = document.getElementById('add-stu-dob')?.value || '';
+        const admDateVal = document.getElementById('add-stu-adm-date')?.value || '';
+        const adhaarVal = document.getElementById('add-stu-adhaar')?.value?.trim() || '';
+        const samasthaVal = document.getElementById('add-stu-samastha')?.value?.trim() || '';
+        const uidVal = document.getElementById('add-stu-uid')?.value?.trim() || '';
+        const admVal = (document.getElementById('add-stu-adm')?.value || '').toUpperCase().trim();
+        const mobileVal = document.getElementById('add-stu-mobile')?.value?.trim() || '';
+        const fatherVal = (document.getElementById('add-stu-father')?.value || '').toUpperCase().trim();
+        const motherVal = (document.getElementById('add-stu-mother')?.value || '').toUpperCase().trim();
+        const motherMobileVal = document.getElementById('add-stu-mother-mobile')?.value?.trim() || '';
+        const addressVal = document.getElementById('add-stu-address')?.value?.trim() || '';
+        const statusVal = normalizeStudentStatus(document.getElementById('add-stu-status')?.value || 'Active');
+
+        const nextStudent = {
+            academicYear: activeAcademicYear || currentAcademicYear,
+            class: cls,
+            studentClass: cls, // Save both for compatibility with React
+            name: name,
+            gender: gender,
+            status: statusVal,
+            uid: uidVal,
+            adm: admVal,
+            mobile: mobileVal,
+            father: fatherVal,
+            mother: motherVal,
+            motherMobile: motherMobileVal,
+            address: addressVal,
             dob: dobVal,
-            address: document.getElementById('add-stu-address').value.trim(),
-            adhaar: adhaarVal,
-            admNo: document.getElementById('add-stu-adm').value.toUpperCase().trim(),
             admDate: admDateVal,
             adm_date: admDateVal,
+            adhaar: adhaarVal,
             samasthaId: samasthaVal,
             photo: photoVal,
-            uid: document.getElementById('add-stu-uid').value.trim(),
-            father: document.getElementById('add-stu-father').value.toUpperCase().trim(),
-            mother: document.getElementById('add-stu-mother').value.toUpperCase().trim(),
-            mobile: document.getElementById('add-stu-mobile').value.trim(),
-            motherMobile: document.getElementById('add-stu-mother-mobile').value.trim(),
-            status: normalizeStudentStatus(document.getElementById('add-stu-status').value)
+            profile: {
+                dob: dobVal,
+                address: addressVal,
+                adhaar: adhaarVal,
+                admNo: admVal,
+                admDate: admDateVal,
+                adm_date: admDateVal,
+                samasthaId: samasthaVal,
+                photo: photoVal,
+                uid: uidVal,
+                father: fatherVal,
+                mother: motherVal,
+                mobile: mobileVal,
+                motherMobile: motherMobileVal,
+                status: statusVal
+            }
+        };
+
+        const duplicateStudent = students.find((student) => student.class === cls && student.name === name && (student.adm || '') === nextStudent.adm && (student.uid || '') === nextStudent.uid);
+        if (duplicateStudent) {
+            alert('A matching student already exists in this academic year.');
+            if (btn) btn.disabled = false;
+            return;
         }
-    };
-    const duplicateStudent = students.find((student) => student.class === cls && student.name === name && (student.adm || '') === nextStudent.adm && (student.uid || '') === nextStudent.uid);
-    if (duplicateStudent) return alert('A matching student already exists in this academic year.');
-    document.getElementById('add-manual-btn').disabled = true;
-    const studentDoc = await addDoc(collection(db, `${BASE_PATH}/students`), nextStudent);
-    await syncEnrollmentRecord(studentDoc.id, nextStudent);
-    await setDoc(doc(db, `${BASE_PATH}/studentPhotoSubmissions`, studentDoc.id), { photo: photoVal, updatedAt: Date.now() }, { merge: true });
-    await syncActiveAcademicYearClasses([cls]);
-    await logAuditEvent({ category: 'student', action: 'student.create', entityType: 'student', entityId: studentDoc.id, message: `Student added: ${name}.` });
-    alert("Student Added!");
-    ['add-stu-class','add-stu-uid','add-stu-name','add-stu-father','add-stu-mother','add-stu-mobile','add-stu-mother-mobile','add-stu-adm','add-stu-address','add-stu-photo', 'add-stu-dob', 'add-stu-adm-date', 'add-stu-adhaar', 'add-stu-samastha'].forEach(id => {
-        const el = document.getElementById(id);
-        if (el) el.value = '';
-    });
-    updateAdminPhotoWidgetPreview('', 'add-stu-photo-preview', 'add-stu-photo-placeholder', 'add-stu-remove-btn', 'add-stu-photo');
-    document.getElementById('add-stu-status').value = 'Active';
-    document.getElementById('add-manual-btn').disabled = false;
+
+        const studentDoc = await addDoc(collection(db, `${BASE_PATH}/students`), nextStudent);
+        await syncEnrollmentRecord(studentDoc.id, nextStudent);
+        await setDoc(doc(db, `${BASE_PATH}/studentPhotoSubmissions`, studentDoc.id), { photo: photoVal, updatedAt: Date.now() }, { merge: true });
+        await syncActiveAcademicYearClasses([cls]);
+        await logAuditEvent({ category: 'student', action: 'student.create', entityType: 'student', entityId: studentDoc.id, message: `Student added: ${name}.` });
+        
+        alert("Student Added!");
+
+        ['add-stu-class','add-stu-uid','add-stu-name','add-stu-father','add-stu-mother','add-stu-mobile','add-stu-mother-mobile','add-stu-adm','add-stu-address','add-stu-photo', 'add-stu-dob', 'add-stu-adm-date', 'add-stu-adhaar', 'add-stu-samastha'].forEach(id => {
+            const el = document.getElementById(id);
+            if (el) el.value = '';
+        });
+        updateAdminPhotoWidgetPreview('', 'add-stu-photo-preview', 'add-stu-photo-placeholder', 'add-stu-remove-btn', 'add-stu-photo');
+        const statusEl = document.getElementById('add-stu-status');
+        if (statusEl) statusEl.value = 'Active';
+    } catch(err) {
+        console.error("Failed to add student:", err);
+        alert("Failed to add student: " + (err.message || err));
+    } finally {
+        if (btn) btn.disabled = false;
+    }
 });
 
 const saveStudentPortalPermissions = async () => {
