@@ -28,7 +28,8 @@
     -webkit-tap-highlight-color: transparent; 
 }
 
-html { scroll-behavior: smooth !important; }
+html { scroll-behavior: auto; }
+html.smooth-scroll { scroll-behavior: smooth; }
 body { overflow-x: hidden; }
 body.modal-scroll-lock {
     overflow: hidden !important;
@@ -72,8 +73,7 @@ ul { list-style: none; }
 img { display: block; max-width: 100%; }
 .hidden { display: none !important; }
 .page-content {
-    content-visibility: auto;
-    contain-intrinsic-size: 1px 800px;
+    width: 100%;
 }
 
 /* -----------------------------------

@@ -30,14 +30,14 @@
         --header-height: 70px;
     }
     * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Plus Jakarta Sans', 'Inter', sans-serif; -webkit-tap-highlight-color: transparent; }
-    html { scroll-behavior: smooth !important; }
+    html { scroll-behavior: auto; }
     body { overflow-x: hidden; background-color: var(--background-light); color: var(--text-light); }
     body.modal-scroll-lock { overflow: hidden !important; overscroll-behavior: none; }
     a { text-decoration: none; color: inherit; transition: 0.2s; }
     ul { list-style: none; }
     img { display: block; max-width: 100%; }
     .hidden { display: none !important; }
-    .page-content { content-visibility: auto; contain-intrinsic-size: 1px 800px; }
+    .page-content { width: 100%; }
 
     .card { background-color: var(--card-light); border: 1px solid var(--border-light); }
     .btn-primary { background-color: var(--accent); color: #ffffff; transition: 0.2s; cursor: pointer; border: none; }

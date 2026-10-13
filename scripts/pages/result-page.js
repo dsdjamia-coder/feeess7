@@ -654,6 +654,10 @@ const activateResultTab = (tabEl, { updateHash = true } = {}) => {
     const targetPage = document.getElementById(tabEl.dataset.target);
     if(targetPage) targetPage.classList.remove('hidden');
 
+    // Reset viewport scroll to top cleanly and ensure scroll lock is removed
+    window.scrollTo({ top: 0, left: 0, behavior: 'instant' });
+    document.body.classList.remove('modal-scroll-lock');
+
     // Trigger panel refresh when snapshot-page is activated
     if (tabEl.dataset.target === 'snapshot-page') {
         renderSnapshotPanelUI();
@@ -770,15 +774,13 @@ const initializeDataListeners = () => {
         try {
             populateDropdowns();
             updateDashboard();
-            renderPublishedDraftTables();
-            updateReportPreview();
             if (typeof renderSnapshotPanelUI === 'function') {
                 renderSnapshotPanelUI();
             }
         } catch (error) {
             reportFatalResultError(error, 'scheduleRefresh');
         }
-    }, 100);
+    }, 150);
     onSnapshot(doc(db, `${BASE_PATH}/settings`, 'academicYears'), (snap) => {
         const payload = snap.exists() ? snap.data() : {};
         currentAcademicYear = payload.currentYear || '';
@@ -2037,6 +2039,26 @@ const renderExamSetup = () => {
     `;
 };
 
+const openExamModal = () => {
+    const modal = document.getElementById('exam-modal');
+    if (modal) {
+        modal.classList.remove('hidden');
+        modal.classList.add('flex');
+        modal.style.display = 'flex';
+    }
+    document.body.classList.add('modal-scroll-lock');
+};
+
+const closeExamModal = () => {
+    const modal = document.getElementById('exam-modal');
+    if (modal) {
+        modal.classList.add('hidden');
+        modal.classList.remove('flex');
+        modal.style.display = 'none';
+    }
+    document.body.classList.remove('modal-scroll-lock');
+};
+
 document.getElementById('create-exam-btn')?.addEventListener('click', () => {
     if (roleScope !== 'admin') return alert('Only admin can manage exam setup.');
     editingExamId = null;
@@ -2050,13 +2072,10 @@ document.getElementById('create-exam-btn')?.addEventListener('click', () => {
             <button class="text-red-500 px-2 remove-sub-btn"><i class="fas fa-times"></i></button>
         </div>
     `;
-    document.getElementById('exam-modal').classList.remove('hidden');
-    document.getElementById('exam-modal').classList.add('flex');
+    openExamModal();
 });
 
-document.getElementById('exam-cancel').addEventListener('click', () => {
-    document.getElementById('exam-modal').classList.add('hidden');
-});
+document.getElementById('exam-cancel').addEventListener('click', closeExamModal);
 
 document.getElementById('add-subject-btn').addEventListener('click', () => {
     const div = document.createElement('div');
@@ -2095,8 +2114,7 @@ document.getElementById('exam-list-container').addEventListener('click', async (
         `).join('');
         document.getElementById('subject-list').innerHTML = subHtml || `<div class="flex gap-2 mb-2 sub-row"><input type="text" class="w-full p-2 border rounded-lg text-sm sub-input" placeholder="Subject Name"><button class="text-red-500 px-2 remove-sub-btn"><i class="fas fa-times"></i></button></div>`;
         
-        document.getElementById('exam-modal').classList.remove('hidden');
-        document.getElementById('exam-modal').classList.add('flex');
+        openExamModal();
     }
 
     if(delBtn) {
@@ -2141,7 +2159,7 @@ document.getElementById('exam-save').addEventListener('click', async () => {
         } else {
             await setDoc(doc(collection(db, `${BASE_PATH}/resultSchemas`)), payload);
         }
-        document.getElementById('exam-modal').classList.add('hidden');
+        closeExamModal();
     } catch (err) {
         console.error(err);
         alert("Failed to save exam.");
@@ -2607,9 +2625,19 @@ const validateMarksTable = () => {
     return allValid;
 };
 const bindMarksValidationEvents = () => {
-    document.querySelectorAll('#marks-table-body .mark-input').forEach((input) => {
-        input.addEventListener('input', () => validateMarksTable());
-    });
+    const tableBody = document.getElementById('marks-table-body');
+    if (!tableBody) return;
+    if (tableBody.dataset.validationBound !== 'true') {
+        tableBody.dataset.validationBound = 'true';
+        tableBody.addEventListener('input', (e) => {
+            const input = e.target.closest('.mark-input');
+            if (input) {
+                validateSingleMarkInput(input);
+                const hasError = Boolean(tableBody.querySelector('.mark-input.input-error'));
+                document.getElementById('marks-validation-note')?.classList.toggle('hidden', !hasError);
+            }
+        });
+    }
     validateMarksTable();
 };
 
@@ -3427,13 +3455,14 @@ document.getElementById('exam-list-container')?.addEventListener('click', async 
     }
 });
 
-// Carry Forward Previous Year Subjects Modal Handlers
 const closeCarryforwardModal = () => {
     const modal = document.getElementById('carryforward-modal');
     if (modal) {
         modal.classList.add('hidden');
         modal.classList.remove('flex');
+        modal.style.display = 'none';
     }
+    document.body.classList.remove('modal-scroll-lock');
 };
 
 document.getElementById('open-carryforward-modal-btn')?.addEventListener('click', () => {
@@ -3498,6 +3527,8 @@ document.getElementById('open-carryforward-modal-btn')?.addEventListener('click'
 
     modal.classList.remove('hidden');
     modal.classList.add('flex');
+    modal.style.display = 'flex';
+    document.body.classList.add('modal-scroll-lock');
 });
 
 document.getElementById('carryforward-modal-close-x')?.addEventListener('click', closeCarryforwardModal);
@@ -4707,14 +4738,22 @@ const openResultEditModal = (resultId = '') => {
             </label>`;
         }).join('');
     }
-    modal?.classList.remove('hidden');
-    modal?.classList.add('flex');
+    if (modal) {
+        modal.classList.remove('hidden');
+        modal.classList.add('flex');
+        modal.style.display = 'flex';
+    }
+    document.body.classList.add('modal-scroll-lock');
 };
 const closeResultEditModal = () => {
     editingResultId = '';
     const modal = document.getElementById('result-edit-modal');
-    modal?.classList.add('hidden');
-    modal?.classList.remove('flex');
+    if (modal) {
+        modal.classList.add('hidden');
+        modal.classList.remove('flex');
+        modal.style.display = 'none';
+    }
+    document.body.classList.remove('modal-scroll-lock');
 };
 const saveResultEditModal = async () => {
     const row = examResultsCache.find((entry) => entry.id === editingResultId);
@@ -4911,10 +4950,20 @@ document.getElementById('result-visibility-grid')?.addEventListener('click', (ev
         const visibility = map[key] && typeof map[key] === 'object' ? map[key] : { marks: map[key] !== false, grades: map[key] !== false };
         return `<div class="border rounded p-2"><div class="text-sm font-semibold">${escapeHtml(exam.label)}</div><div class="flex gap-4 text-sm mt-1"><label><input type="checkbox" class="result-visibility-checkbox" data-key="${escapeHtml(key)}" data-type="marks" ${visibility.marks ? 'checked' : ''}> Mark</label><label><input type="checkbox" class="result-visibility-checkbox" data-key="${escapeHtml(key)}" data-type="grades" ${visibility.grades ? 'checked' : ''}> Grade</label></div></div>`;
     }));
-    body.innerHTML = rows.join('') || '<div class="text-sm text-gray-500">No exams found.</div>';
     modal.classList.remove('hidden');
+    modal.classList.add('flex');
+    modal.style.display = 'flex';
+    document.body.classList.add('modal-scroll-lock');
 });
-document.getElementById('visibility-modal-close')?.addEventListener('click', () => document.getElementById('visibility-modal')?.classList.add('hidden'));
+document.getElementById('visibility-modal-close')?.addEventListener('click', () => {
+    const modal = document.getElementById('visibility-modal');
+    if (modal) {
+        modal.classList.add('hidden');
+        modal.classList.remove('flex');
+        modal.style.display = 'none';
+    }
+    document.body.classList.remove('modal-scroll-lock');
+});
 const bindSelectToggle = (btnId, checkboxClass) => {
     document.getElementById(btnId)?.addEventListener('click', () => {
         const btn = document.getElementById(btnId);
@@ -5108,6 +5157,8 @@ document.querySelectorAll('.settings-nav-link').forEach((link) => {
             pages.forEach(p => p.classList.add('hidden'));
             settingsPage.classList.remove('hidden');
             document.body.classList.remove('marks-entry-active');
+            window.scrollTo({ top: 0, left: 0, behavior: 'instant' });
+            document.body.classList.remove('modal-scroll-lock');
             
             const subtabId = link.dataset.subtab || 'subpanel-publish';
             activateSettingsSubpanel(subtabId);
@@ -5131,10 +5182,10 @@ document.querySelectorAll('.settings-subtab-btn').forEach((btn) => {
     });
 });
 
-// Click outside handlers for header dropdown menu and kebab menus
+// Click outside handlers for modals, header dropdown menu and kebab menus
 document.addEventListener('click', (e) => {
     if (navMenu && navMenu.classList.contains('active')) {
-        if (!navMenu.contains(e.target) && !mobileMenuBtn.contains(e.target)) {
+        if (!navMenu.contains(e.target) && !mobileMenuBtn?.contains(e.target)) {
             navMenu.classList.remove('active');
             mobileMenuBtn?.classList.remove('active-toggle');
         }
@@ -5144,6 +5195,30 @@ document.addEventListener('click', (e) => {
     }
     if (!e.target.closest('.schema-menu-toggle') && !e.target.closest('.schema-menu')) {
         document.querySelectorAll('.schema-menu').forEach((menu) => menu.classList.add('hidden'));
+    }
+    // Dismiss modals if clicking on overlay backdrop
+    if (e.target.classList.contains('modal-overlay')) {
+        const modal = e.target;
+        modal.classList.add('hidden');
+        modal.classList.remove('flex');
+        modal.style.display = 'none';
+        document.body.classList.remove('modal-scroll-lock');
+    }
+});
+
+// Escape key dismisses modals and clears any scroll lock
+document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape') {
+        document.querySelectorAll('.modal-overlay').forEach((modal) => {
+            modal.classList.add('hidden');
+            modal.classList.remove('flex');
+            modal.style.display = 'none';
+        });
+        document.body.classList.remove('modal-scroll-lock');
+        if (navMenu && navMenu.classList.contains('active')) {
+            navMenu.classList.remove('active');
+            mobileMenuBtn?.classList.remove('active-toggle');
+        }
     }
 });
 

@@ -57,32 +57,40 @@ export const initGlobalModalScrollLock = () => {
     rootEl.dataset.modalScrollLockBound = 'true';
 
     const isVisible = (el) => {
-        if (!el || el.classList.contains('hidden')) return false;
+        if (!el || el.classList.contains('hidden') || el.style.display === 'none') return false;
+        if (el.style.display === 'flex' || el.style.display === 'block') return true;
         const style = window.getComputedStyle(el);
         return style.display !== 'none' && style.visibility !== 'hidden' && style.opacity !== '0';
     };
 
+    let syncRaf = null;
     const syncBodyLock = () => {
-        const overlays = document.querySelectorAll('.modal-overlay, .popup-overlay');
-        const hasOpenOverlay = Array.from(overlays).some((overlay) => isVisible(overlay));
-        document.body.classList.toggle('modal-scroll-lock', hasOpenOverlay);
+        if (syncRaf) cancelAnimationFrame(syncRaf);
+        syncRaf = requestAnimationFrame(() => {
+            syncRaf = null;
+            const overlays = document.querySelectorAll('.modal-overlay:not(.hidden), .popup-overlay:not(.hidden)');
+            const hasOpenOverlay = Array.from(overlays).some((overlay) => isVisible(overlay));
+            if (document.body && document.body.classList.contains('modal-scroll-lock') !== hasOpenOverlay) {
+                document.body.classList.toggle('modal-scroll-lock', hasOpenOverlay);
+            }
+        });
     };
 
     const bindObserver = () => {
         if (!document.body) return;
-        const observer = new MutationObserver(syncBodyLock);
-        observer.observe(document.body, {
-            subtree: true,
-            childList: true,
-            attributes: true,
-            attributeFilter: ['class', 'style']
-        });
+        const overlays = document.querySelectorAll('.modal-overlay, .popup-overlay');
+        if (overlays.length > 0) {
+            const observer = new MutationObserver(syncBodyLock);
+            overlays.forEach((el) => {
+                observer.observe(el, { attributes: true, attributeFilter: ['class', 'style'] });
+            });
+        }
         syncBodyLock();
     };
 
     document.addEventListener('keydown', (event) => {
         if (event.key === 'Escape') {
-            window.requestAnimationFrame(syncBodyLock);
+            syncBodyLock();
         }
     });
 
