@@ -208,10 +208,15 @@
                     </div>
 
                     <div class="grid grid-cols-1 md:grid-cols-5 gap-4">
-                        <div><label class="block text-sm font-semibold mb-1">Academic Year</label><select id="academic-year-preset-select" class="w-full p-2.5 border rounded-lg"></select></div>
-                        <div><label class="block text-sm font-semibold mb-1">Start Month</label><select id="academic-year-start-month" class="w-full p-2.5 border rounded-lg"></select></div>
-                        <div><label class="block text-sm font-semibold mb-1">End Month</label><select id="academic-year-end-month" class="w-full p-2.5 border rounded-lg"></select></div>
-                        <div><label class="block text-sm font-semibold mb-1">Status</label><select id="academic-year-status" class="w-full p-2.5 border rounded-lg"><option value="active">Active</option><option value="planning">Planning</option><option value="archived">Archived</option></select></div>
+                        <div>
+                            <label class="block text-sm font-semibold mb-1" for="academic-year-input">Academic Year</label>
+                            <input type="text" id="academic-year-input" class="w-full p-2.5 border rounded-lg font-mono focus:border-emerald-500 outline-none" placeholder="e.g. 2025-2026" autocomplete="off" maxlength="9">
+                            <p class="text-[11px] text-gray-500 mt-1 leading-tight">Format: <strong class="text-emerald-700 font-bold font-mono">YYYY-YYYY</strong> (e.g. 2025-2026)</p>
+                            <p id="academic-year-input-error" class="hidden text-[11px] text-rose-600 font-semibold mt-0.5 leading-tight"></p>
+                        </div>
+                        <div><label class="block text-sm font-semibold mb-1" for="academic-year-start-month">Start Month</label><select id="academic-year-start-month" class="w-full p-2.5 border rounded-lg"></select></div>
+                        <div><label class="block text-sm font-semibold mb-1" for="academic-year-end-month">End Month</label><select id="academic-year-end-month" class="w-full p-2.5 border rounded-lg"></select></div>
+                        <div><label class="block text-sm font-semibold mb-1" for="academic-year-status">Status</label><select id="academic-year-status" class="w-full p-2.5 border rounded-lg"><option value="active">Active</option><option value="planning">Planning</option><option value="archived">Archived</option></select></div>
                         <div class="flex items-end"><button id="add-academic-year-btn" class="btn-primary font-bold py-2.5 px-6 rounded-lg shadow-md w-full"><i class="fas fa-save mr-2"></i>Apply Year Settings</button></div>
                     </div>
                 </div>

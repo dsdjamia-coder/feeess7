@@ -366,18 +366,17 @@ const populateAcademicMonthSelectors = () => {
     if (!endSelect.value) endSelect.value = '4';
 };
 const populateAcademicYearPresetSelector = () => {
-    const select = document.getElementById('academic-year-preset-select');
-    if (!select) return;
-    const presetLabels = getAcademicYearPresetLabels();
-    const existingLabels = academicYears.map((year) => sanitizeAcademicYearLabel(year.label)).filter(Boolean);
-    const available = presetLabels.filter((label) => !existingLabels.includes(label)).sort((a, b) => Number(b.split('-')[0]) - Number(a.split('-')[0]));
-    if (!available.length) {
-        select.innerHTML = '<option value="">No new preset years available</option>';
-        select.value = '';
-        return;
+    const input = document.getElementById('academic-year-input');
+    if (!input) return;
+    if (!input.value.trim()) {
+        const sortedYears = academicYears
+            .map((y) => String(y.label || '').match(/^(\d{4})-(\d{4})$/))
+            .filter(Boolean)
+            .map((m) => Number(m[2]))
+            .sort((a, b) => b - a);
+        const lastEndYear = sortedYears[0] || new Date().getFullYear();
+        input.value = `${lastEndYear}-${lastEndYear + 1}`;
     }
-    select.innerHTML = available.map((label) => `<option value="${label}">${label}</option>`).join('');
-    select.value = available[0];
 };
 const enforceSetupGate = () => {
     const activeYear = getActiveAcademicYearRecord();
@@ -5692,16 +5691,53 @@ document.getElementById('audit-log-list').addEventListener('click', (event) => {
 
 document.getElementById('add-academic-year-btn').addEventListener('click', async () => {
     if(!requirePermission('academic-years.manage')) return;
-    const labelRaw = document.getElementById('academic-year-preset-select')?.value || '';
+    const inputEl = document.getElementById('academic-year-input');
+    const errorEl = document.getElementById('academic-year-input-error');
+    const labelRaw = String(inputEl?.value || '').trim();
     const status = document.getElementById('academic-year-status').value;
     const startMonth = Number(document.getElementById('academic-year-start-month')?.value ?? 5);
     const endMonth = Number(document.getElementById('academic-year-end-month')?.value ?? 4);
-    const label = sanitizeAcademicYearLabel(labelRaw);
-    const [startYear = 0, endYear = 0] = label.split('-').map(Number);
 
-    if (!label || !startYear || !endYear) return alert('Select a valid academic year from the dropdown.');
+    const showInputError = (message) => {
+        if (errorEl) {
+            errorEl.textContent = message;
+            errorEl.classList.remove('hidden');
+        }
+        inputEl?.classList.add('input-error');
+        inputEl?.focus();
+        alert(message);
+    };
+
+    if (!labelRaw) {
+        return showInputError('Please enter an academic year in YYYY-YYYY format (e.g. 2025-2026).');
+    }
+
+    const match = labelRaw.match(/^(\d{4})-(\d{4})$/);
+    if (!match) {
+        return showInputError('Invalid format! Must be strictly YYYY-YYYY (e.g. 2024-2025 or 2025-2026).');
+    }
+
+    const startYear = Number(match[1]);
+    const endYear = Number(match[2]);
+
+    if (startYear < 1990 || startYear > 2100) {
+        return showInputError('Start year must be between 1990 and 2100.');
+    }
+
+    if (endYear !== startYear + 1) {
+        return showInputError(`Consecutive year required! For start year ${startYear}, the end year must be ${startYear + 1} (${startYear}-${startYear + 1}).`);
+    }
+
+    const label = `${startYear}-${endYear}`;
+
     const existing = academicYears.find((year) => year.label === label);
-    if (existing) return alert('This academic year is already configured. Use the 3-dot menu in the year card to edit it.');
+    if (existing) {
+        return showInputError(`Academic year "${label}" already exists. Use the 3-dot menu in the card below to edit or activate it.`);
+    }
+
+    if (errorEl) errorEl.classList.add('hidden');
+    inputEl?.classList.remove('input-error');
+
     academicYears.push({
         label,
         startYear: Number(startYear),
@@ -5715,22 +5751,36 @@ document.getElementById('add-academic-year-btn').addEventListener('click', async
     if (status === 'active' || !activeAcademicYear) activeAcademicYear = label;
     await persistAcademicYears();
     await logAuditEvent({ category: 'security', action: 'academic-year.create', entityType: 'academicYear', entityId: label, message: `Academic year created: ${label}.` });
-    populateAcademicYearPresetSelector();
+    
+    // Set next consecutive year as suggestion in input
+    if (inputEl) inputEl.value = `${endYear}-${endYear + 1}`;
     document.getElementById('academic-year-status').value = 'active';
     const startMonthSelect = document.getElementById('academic-year-start-month');
     const endMonthSelect = document.getElementById('academic-year-end-month');
     if (startMonthSelect) startMonthSelect.value = '5';
     if (endMonthSelect) endMonthSelect.value = '4';
+    alert(`Academic year "${label}" created successfully!`);
 });
-document.getElementById('academic-year-preset-select')?.addEventListener('change', (event) => {
-    const selectedLabel = sanitizeAcademicYearLabel(event.target.value || '');
-    const selectedYear = academicYears.find((year) => year.label === selectedLabel);
-    const startMonthSelect = document.getElementById('academic-year-start-month');
-    const endMonthSelect = document.getElementById('academic-year-end-month');
-    const statusSelect = document.getElementById('academic-year-status');
-    if (startMonthSelect) startMonthSelect.value = String(selectedYear?.startMonth ?? 5);
-    if (endMonthSelect) endMonthSelect.value = String(selectedYear?.endMonth ?? 4);
-    if (statusSelect) statusSelect.value = selectedYear?.status || (selectedLabel === getActiveAcademicYearLabel() ? 'active' : 'planning');
+
+document.getElementById('academic-year-input')?.addEventListener('input', (event) => {
+    const errorEl = document.getElementById('academic-year-input-error');
+    const val = String(event.target.value || '').trim();
+    if (event.target.classList.contains('input-error') && (/^\d{4}-\d{4}$/.test(val) || val.length === 0)) {
+        event.target.classList.remove('input-error');
+        if (errorEl) errorEl.classList.add('hidden');
+    }
+    const match = val.match(/^(\d{4})-(\d{4})$/);
+    if (match) {
+        const found = academicYears.find((y) => y.label === val);
+        if (found) {
+            const startMonthSelect = document.getElementById('academic-year-start-month');
+            const endMonthSelect = document.getElementById('academic-year-end-month');
+            const statusSelect = document.getElementById('academic-year-status');
+            if (startMonthSelect) startMonthSelect.value = String(found.startMonth ?? 5);
+            if (endMonthSelect) endMonthSelect.value = String(found.endMonth ?? 4);
+            if (statusSelect) statusSelect.value = found.status || 'planning';
+        }
+    }
 });
 
 document.getElementById('academic-years-list').addEventListener('click', async (e) => {
@@ -6051,11 +6101,10 @@ onAuthStateChanged(auth, async (user) => {
             }));
             activeAcademicYear = sanitizeAcademicYearLabel(data.currentYear || academicYears.find((year) => year.status === 'active')?.label || currentAcademicYear);
             populateAcademicYearPresetSelector();
-            const yearSelect = document.getElementById('academic-year-preset-select');
+            const yearInput = document.getElementById('academic-year-input');
             const statusSelect = document.getElementById('academic-year-status');
             const startMonthSelect = document.getElementById('academic-year-start-month');
             const endMonthSelect = document.getElementById('academic-year-end-month');
-            if (yearSelect) yearSelect.value = activeAcademicYear;
             const activeYearRecord = academicYears.find((year) => year.label === activeAcademicYear) || {};
             if (statusSelect) statusSelect.value = activeYearRecord.status || 'active';
             if (startMonthSelect) startMonthSelect.value = String(activeYearRecord.startMonth ?? 5);
