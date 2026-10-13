@@ -2157,6 +2157,8 @@ function handleExcelFile(file) {
                 admDate: ['admdate', 'dateofadmission', 'admissiondate', 'admnsdate', 'admldate', 'joiningdate', 'admissiondateddmmyyyy', 'admdateddmmyyyy'],
                 adhaar: ['aadhaar', 'adhaar', 'aadharno', 'aadhaarnumber', 'adhaarnumber', 'uidai'],
                 samastha: ['samastha', 'samasthaid', 'samasthano', 'regno', 'registrationno']
+            };
+
             // Analyze each row against the 15 standard student fields
             // Standard fields: 1.Photo, 2.Class, 3.UID, 4.Name*, 5.Father, 6.Mother, 7.Gender*, 8.Adm No, 9.DOB, 10.Adm Date, 11.Status, 12.Aadhaar, 13.Father Mobile, 14.Mother Mobile, 15.Address
             const existingClassStudents = students.filter(st => String(st.class || '').toUpperCase().trim() === selectedBulkClass);
