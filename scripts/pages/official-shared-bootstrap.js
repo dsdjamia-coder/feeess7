@@ -662,33 +662,33 @@ import { signInAnonymously, onAuthStateChanged, signInWithEmailAndPassword } fro
         ? (hasIndividualConc ? `₹${student.concessionFee}/month (Group: ₹${group.fee || 0}/month)` : `Group Standard Rate: ₹${group.fee || 0}/month`)
         : (hasIndividualConc ? `₹${student.concessionFee}/month` : 'Standard Rate (No Concession)');
 
-      const avatarHtml = renderAvatarMarkup(student, nameVal, 'w-20 h-20 sm:w-24 sm:h-24 rounded-2xl text-2xl shadow-lg border-2 border-white/30 shrink-0');
+      const avatarHtml = renderAvatarMarkup(student, nameVal, 'w-14 h-14 sm:w-22 sm:h-22 rounded-xl sm:rounded-2xl text-xl sm:text-2xl shadow-md border-2 border-white/30 shrink-0');
 
       return `
-        <div class="space-y-4">
+        <div class="space-y-2.5 sm:space-y-4">
           <!-- Top Identity Header Banner -->
-          <div class="flex flex-col sm:flex-row items-center gap-4 p-4 sm:p-5 rounded-2xl bg-gradient-to-br from-slate-900 via-indigo-950 to-blue-950 text-white shadow-xl border border-slate-800">
+          <div class="flex items-center gap-3 sm:gap-4 p-3 sm:p-5 rounded-xl sm:rounded-2xl bg-gradient-to-br from-slate-900 via-indigo-950 to-blue-950 text-white shadow-xl border border-slate-800">
             <div class="relative shrink-0">
               ${avatarHtml}
-              <span class="absolute -bottom-1 -right-1 w-5 h-5 rounded-full border-2 border-slate-900 ${isAct ? 'bg-emerald-500' : 'bg-rose-500'} flex items-center justify-center text-[9px]" title="${isAct ? 'Active Student' : 'Inactive'}">
+              <span class="absolute -bottom-1 -right-1 w-4 h-4 sm:w-5 sm:h-5 rounded-full border-2 border-slate-900 ${isAct ? 'bg-emerald-500' : 'bg-rose-500'} flex items-center justify-center text-[8px] sm:text-[9px]" title="${isAct ? 'Active Student' : 'Inactive'}">
                 <i class="fas ${isAct ? 'fa-check' : 'fa-times'} text-white"></i>
               </span>
             </div>
-            <div class="text-center sm:text-left flex-1 min-w-0">
-              <div class="flex flex-wrap items-center justify-center sm:justify-start gap-2 mb-1.5">
-                <span class="px-2.5 py-0.5 rounded-full text-[11px] font-extrabold uppercase tracking-wider ${isAct ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-400/30' : 'bg-rose-500/20 text-rose-300 border border-rose-400/30'}">
-                  <i class="fas fa-circle text-[7px] mr-1"></i>${escapeHtml(status)}
+            <div class="flex-1 min-w-0">
+              <div class="flex flex-wrap items-center gap-1.5 mb-1">
+                <span class="px-2 py-0.5 rounded-full text-[10px] sm:text-[11px] font-extrabold uppercase tracking-wider ${isAct ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-400/30' : 'bg-rose-500/20 text-rose-300 border border-rose-400/30'}">
+                  <i class="fas fa-circle text-[6px] mr-1"></i>${escapeHtml(status)}
                 </span>
-                <span class="px-2.5 py-0.5 rounded-lg text-[11px] font-extrabold bg-blue-600 text-white shadow-xs">
+                <span class="px-2 py-0.5 rounded-lg text-[10px] sm:text-[11px] font-extrabold bg-blue-600 text-white shadow-xs">
                   <i class="fas fa-graduation-cap mr-1 opacity-80"></i>Class ${escapeHtml(classVal)}
                 </span>
-                <span class="px-2.5 py-0.5 rounded-lg text-[11px] font-mono font-bold bg-white/10 text-slate-100 border border-white/15">
+                <span class="px-2 py-0.5 rounded-lg text-[10px] sm:text-[11px] font-mono font-bold bg-white/10 text-slate-100 border border-white/15">
                   Adm: ${escapeHtml(admVal)}
                 </span>
               </div>
-              <h3 class="text-xl sm:text-2xl font-black text-white leading-snug break-words">${escapeHtml(nameVal)}</h3>
-              <div class="text-xs font-semibold text-indigo-200 mt-1.5 flex flex-wrap items-center justify-center sm:justify-start gap-x-3 gap-y-1">
-                <span><i class="fas fa-venus-mars mr-1 opacity-75"></i>Gender: <b class="text-white">${escapeHtml(genderVal)}</b></span>
+              <h3 class="text-base sm:text-2xl font-black text-white leading-tight truncate sm:whitespace-normal">${escapeHtml(nameVal)}</h3>
+              <div class="text-[11px] sm:text-xs font-semibold text-indigo-200 mt-1 flex flex-wrap items-center gap-x-2.5 gap-y-0.5">
+                <span><i class="fas fa-venus-mars mr-1 opacity-75"></i>${escapeHtml(genderVal)}</span>
                 <span class="opacity-50">•</span>
                 <span><i class="fas fa-fingerprint mr-1 opacity-75"></i>UID: <b class="text-white font-mono">${escapeHtml(uidVal)}</b></span>
                 <span class="opacity-50">•</span>
@@ -698,120 +698,120 @@ import { signInAnonymously, onAuthStateChanged, signInWithEmailAndPassword } fro
           </div>
 
           <!-- Section 1: Academic & Enrollment Information -->
-          <div class="bg-white rounded-2xl border border-slate-200 shadow-xs p-4">
-            <h4 class="text-xs font-extrabold uppercase tracking-wider text-slate-500 mb-3 flex items-center gap-2">
+          <div class="bg-white rounded-xl sm:rounded-2xl border border-slate-200 shadow-xs p-2.5 sm:p-4">
+            <h4 class="text-[11px] sm:text-xs font-extrabold uppercase tracking-wider text-slate-500 mb-2 sm:mb-3 flex items-center gap-1.5">
               <i class="fas fa-id-card text-blue-600"></i>
               <span>Academic & Enrollment Information</span>
             </h4>
-            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 text-xs">
-              <div class="p-3 rounded-xl bg-slate-50 border border-slate-200/80">
-                <span class="text-[10px] font-extrabold text-slate-400 uppercase tracking-wider block">Class / Division</span>
-                <span class="text-sm font-extrabold text-indigo-950 mt-0.5 block">${escapeHtml(classVal)}</span>
+            <div class="grid grid-cols-2 lg:grid-cols-4 gap-2 sm:gap-3 text-xs">
+              <div class="p-2 sm:p-3 rounded-lg sm:rounded-xl bg-slate-50 border border-slate-200/80">
+                <span class="text-[9px] sm:text-[10px] font-extrabold text-slate-400 uppercase tracking-wider block">Class / Division</span>
+                <span class="text-xs sm:text-sm font-extrabold text-indigo-950 mt-0.5 block truncate">${escapeHtml(classVal)}</span>
               </div>
-              <div class="p-3 rounded-xl bg-slate-50 border border-slate-200/80">
-                <span class="text-[10px] font-extrabold text-slate-400 uppercase tracking-wider block">Admission Number</span>
-                <span class="text-sm font-extrabold font-mono text-slate-900 mt-0.5 block">${escapeHtml(admVal)}</span>
+              <div class="p-2 sm:p-3 rounded-lg sm:rounded-xl bg-slate-50 border border-slate-200/80">
+                <span class="text-[9px] sm:text-[10px] font-extrabold text-slate-400 uppercase tracking-wider block">Admission Number</span>
+                <span class="text-xs sm:text-sm font-extrabold font-mono text-slate-900 mt-0.5 block truncate">${escapeHtml(admVal)}</span>
               </div>
-              <div class="p-3 rounded-xl bg-slate-50 border border-slate-200/80">
-                <span class="text-[10px] font-extrabold text-slate-400 uppercase tracking-wider block">Date of Admission</span>
-                <span class="text-sm font-extrabold font-mono text-slate-900 mt-0.5 block">${escapeHtml(admDateVal)}</span>
+              <div class="p-2 sm:p-3 rounded-lg sm:rounded-xl bg-slate-50 border border-slate-200/80">
+                <span class="text-[9px] sm:text-[10px] font-extrabold text-slate-400 uppercase tracking-wider block">Date of Admission</span>
+                <span class="text-xs sm:text-sm font-extrabold font-mono text-slate-900 mt-0.5 block truncate">${escapeHtml(admDateVal)}</span>
               </div>
-              <div class="p-3 rounded-xl bg-slate-50 border border-slate-200/80">
-                <span class="text-[10px] font-extrabold text-slate-400 uppercase tracking-wider block">Unique ID (UID)</span>
-                <span class="text-sm font-extrabold font-mono text-slate-900 mt-0.5 block">${escapeHtml(uidVal)}</span>
+              <div class="p-2 sm:p-3 rounded-lg sm:rounded-xl bg-slate-50 border border-slate-200/80">
+                <span class="text-[9px] sm:text-[10px] font-extrabold text-slate-400 uppercase tracking-wider block">Unique ID (UID)</span>
+                <span class="text-xs sm:text-sm font-extrabold font-mono text-slate-900 mt-0.5 block truncate">${escapeHtml(uidVal)}</span>
               </div>
             </div>
           </div>
 
           <!-- Section 2: Personal Details -->
-          <div class="bg-white rounded-2xl border border-slate-200 shadow-xs p-4">
-            <h4 class="text-xs font-extrabold uppercase tracking-wider text-slate-500 mb-3 flex items-center gap-2">
+          <div class="bg-white rounded-xl sm:rounded-2xl border border-slate-200 shadow-xs p-2.5 sm:p-4">
+            <h4 class="text-[11px] sm:text-xs font-extrabold uppercase tracking-wider text-slate-500 mb-2 sm:mb-3 flex items-center gap-1.5">
               <i class="fas fa-user text-indigo-600"></i>
               <span>Personal Details</span>
             </h4>
-            <div class="grid grid-cols-1 sm:grid-cols-3 gap-3 text-xs">
-              <div class="p-3 rounded-xl bg-slate-50 border border-slate-200/80">
-                <span class="text-[10px] font-extrabold text-slate-400 uppercase tracking-wider block">Gender</span>
-                <span class="text-sm font-extrabold text-slate-900 mt-0.5 block flex items-center gap-1.5">
+            <div class="grid grid-cols-2 sm:grid-cols-3 gap-2 sm:gap-3 text-xs">
+              <div class="p-2 sm:p-3 rounded-lg sm:rounded-xl bg-slate-50 border border-slate-200/80">
+                <span class="text-[9px] sm:text-[10px] font-extrabold text-slate-400 uppercase tracking-wider block">Gender</span>
+                <span class="text-xs sm:text-sm font-extrabold text-slate-900 mt-0.5 block flex items-center gap-1 truncate">
                   <i class="fas ${genderVal.toLowerCase() === 'female' ? 'fa-female text-pink-500' : 'fa-male text-blue-500'}"></i>
                   ${escapeHtml(genderVal)}
                 </span>
               </div>
-              <div class="p-3 rounded-xl bg-slate-50 border border-slate-200/80">
-                <span class="text-[10px] font-extrabold text-slate-400 uppercase tracking-wider block">Date of Birth (DOB)</span>
-                <span class="text-sm font-extrabold font-mono text-slate-900 mt-0.5 block">${escapeHtml(dobVal)}</span>
+              <div class="p-2 sm:p-3 rounded-lg sm:rounded-xl bg-slate-50 border border-slate-200/80">
+                <span class="text-[9px] sm:text-[10px] font-extrabold text-slate-400 uppercase tracking-wider block">Date of Birth (DOB)</span>
+                <span class="text-xs sm:text-sm font-extrabold font-mono text-slate-900 mt-0.5 block truncate">${escapeHtml(dobVal)}</span>
               </div>
-              <div class="p-3 rounded-xl bg-slate-50 border border-slate-200/80">
-                <span class="text-[10px] font-extrabold text-slate-400 uppercase tracking-wider block">Aadhaar Number</span>
-                <span class="text-sm font-extrabold font-mono text-slate-900 mt-0.5 block">${escapeHtml(adhaarVal)}</span>
+              <div class="p-2 sm:p-3 rounded-lg sm:rounded-xl bg-slate-50 border border-slate-200/80 col-span-2 sm:col-span-1">
+                <span class="text-[9px] sm:text-[10px] font-extrabold text-slate-400 uppercase tracking-wider block">Aadhaar Number</span>
+                <span class="text-xs sm:text-sm font-extrabold font-mono text-slate-900 mt-0.5 block truncate">${escapeHtml(adhaarVal)}</span>
               </div>
             </div>
           </div>
 
           <!-- Section 3: Parent, Contact & Address -->
-          <div class="bg-white rounded-2xl border border-slate-200 shadow-xs p-4">
-            <h4 class="text-xs font-extrabold uppercase tracking-wider text-slate-500 mb-3 flex items-center gap-2">
+          <div class="bg-white rounded-xl sm:rounded-2xl border border-slate-200 shadow-xs p-2.5 sm:p-4">
+            <h4 class="text-[11px] sm:text-xs font-extrabold uppercase tracking-wider text-slate-500 mb-2 sm:mb-3 flex items-center gap-1.5">
               <i class="fas fa-phone-alt text-emerald-600"></i>
               <span>Parent, Contact & Address</span>
             </h4>
-            <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs mb-3">
-              <div class="p-3 rounded-xl bg-slate-50 border border-slate-200/80">
-                <span class="text-[10px] font-extrabold text-slate-400 uppercase tracking-wider block">Father's Name & Phone</span>
-                <div class="text-sm font-extrabold text-slate-900 mt-0.5">${escapeHtml(fatherVal)}</div>
-                <div class="flex items-center justify-between gap-2 mt-2 pt-2 border-t border-slate-200/70">
-                  <span class="font-bold font-mono text-xs text-slate-700">${escapeHtml(fatherPhone || 'No Phone')}</span>
-                  ${fatherPhone ? `<a href="tel:${escapeHtml(fatherPhone)}" class="px-2.5 py-1 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white text-[11px] font-bold inline-flex items-center gap-1 shadow-2xs transition"><i class="fas fa-phone-alt text-[9px]"></i> Call Father</a>` : ''}
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-2 sm:gap-3 text-xs mb-2 sm:mb-3">
+              <div class="p-2 sm:p-3 rounded-lg sm:rounded-xl bg-slate-50 border border-slate-200/80">
+                <div class="flex items-center justify-between gap-1">
+                  <span class="text-[9px] sm:text-[10px] font-extrabold text-slate-400 uppercase tracking-wider">Father's Info</span>
+                  ${fatherPhone ? `<a href="tel:${escapeHtml(fatherPhone)}" class="px-2 py-0.5 rounded bg-emerald-600 hover:bg-emerald-700 text-white text-[10px] font-bold inline-flex items-center gap-1 shrink-0 transition shadow-2xs"><i class="fas fa-phone-alt text-[8px]"></i> Call</a>` : ''}
                 </div>
+                <div class="text-xs sm:text-sm font-extrabold text-slate-900 mt-1 truncate">${escapeHtml(fatherVal)}</div>
+                <div class="font-bold font-mono text-[11px] sm:text-xs text-slate-600 mt-0.5">${escapeHtml(fatherPhone || 'No Phone')}</div>
               </div>
-              <div class="p-3 rounded-xl bg-slate-50 border border-slate-200/80">
-                <span class="text-[10px] font-extrabold text-slate-400 uppercase tracking-wider block">Mother's Name & Phone</span>
-                <div class="text-sm font-extrabold text-slate-900 mt-0.5">${escapeHtml(motherVal)}</div>
-                <div class="flex items-center justify-between gap-2 mt-2 pt-2 border-t border-slate-200/70">
-                  <span class="font-bold font-mono text-xs text-slate-700">${escapeHtml(motherPhone || 'No Phone')}</span>
-                  ${motherPhone ? `<a href="tel:${escapeHtml(motherPhone)}" class="px-2.5 py-1 rounded-lg bg-blue-600 hover:bg-blue-700 text-white text-[11px] font-bold inline-flex items-center gap-1 shadow-2xs transition"><i class="fas fa-phone-alt text-[9px]"></i> Call Mother</a>` : ''}
+              <div class="p-2 sm:p-3 rounded-lg sm:rounded-xl bg-slate-50 border border-slate-200/80">
+                <div class="flex items-center justify-between gap-1">
+                  <span class="text-[9px] sm:text-[10px] font-extrabold text-slate-400 uppercase tracking-wider">Mother's Info</span>
+                  ${motherPhone ? `<a href="tel:${escapeHtml(motherPhone)}" class="px-2 py-0.5 rounded bg-blue-600 hover:bg-blue-700 text-white text-[10px] font-bold inline-flex items-center gap-1 shrink-0 transition shadow-2xs"><i class="fas fa-phone-alt text-[8px]"></i> Call</a>` : ''}
                 </div>
+                <div class="text-xs sm:text-sm font-extrabold text-slate-900 mt-1 truncate">${escapeHtml(motherVal)}</div>
+                <div class="font-bold font-mono text-[11px] sm:text-xs text-slate-600 mt-0.5">${escapeHtml(motherPhone || 'No Phone')}</div>
               </div>
             </div>
-            <div class="p-3 rounded-xl bg-slate-50 border border-slate-200/80 text-xs">
-              <span class="text-[10px] font-extrabold text-slate-400 uppercase tracking-wider block">Permanent Address</span>
-              <div class="text-sm font-bold text-slate-800 mt-1 leading-relaxed break-words flex items-start gap-2">
-                <i class="fas fa-map-marker-alt text-slate-400 mt-1"></i>
+            <div class="p-2 sm:p-3 rounded-lg sm:rounded-xl bg-slate-50 border border-slate-200/80 text-xs">
+              <span class="text-[9px] sm:text-[10px] font-extrabold text-slate-400 uppercase tracking-wider block">Permanent Address</span>
+              <div class="text-xs sm:text-sm font-bold text-slate-800 mt-1 leading-snug break-words flex items-start gap-1.5">
+                <i class="fas fa-map-marker-alt text-slate-400 mt-0.5 shrink-0 text-xs"></i>
                 <span>${escapeHtml(addressVal)}</span>
               </div>
             </div>
           </div>
 
           <!-- Section 4: Fees, Concession & Sibling Group -->
-          <div class="grid grid-cols-1 ${group ? 'lg:grid-cols-2' : ''} gap-3">
-            <div class="bg-white rounded-2xl border ${hasIndividualConc || group ? 'border-emerald-200 bg-emerald-50/30' : 'border-slate-200'} p-4 shadow-xs">
-              <h4 class="text-xs font-extrabold uppercase tracking-wider ${hasIndividualConc || group ? 'text-emerald-800' : 'text-slate-500'} mb-2 flex items-center gap-2">
+          <div class="grid grid-cols-1 ${group ? 'lg:grid-cols-2' : ''} gap-2 sm:gap-3">
+            <div class="bg-white rounded-xl sm:rounded-2xl border ${hasIndividualConc || group ? 'border-emerald-200 bg-emerald-50/30' : 'border-slate-200'} p-2.5 sm:p-4 shadow-xs">
+              <h4 class="text-[11px] sm:text-xs font-extrabold uppercase tracking-wider ${hasIndividualConc || group ? 'text-emerald-800' : 'text-slate-500'} mb-1.5 sm:mb-2 flex items-center gap-1.5">
                 <i class="fas fa-receipt text-emerald-600"></i>
                 <span>Fee Concession Status</span>
               </h4>
-              <div class="p-3 rounded-xl ${hasIndividualConc || group ? 'bg-emerald-50 border border-emerald-200' : 'bg-slate-50 border border-slate-200'}">
-                <div class="text-sm font-extrabold ${hasIndividualConc || group ? 'text-emerald-950' : 'text-slate-800'}">${escapeHtml(concText)}</div>
-                ${hasIndividualConc ? `<p class="text-[11px] font-semibold text-emerald-700 mt-1">Special individualized fee rate active for this student.</p>` : ''}
+              <div class="p-2 sm:p-3 rounded-lg sm:rounded-xl ${hasIndividualConc || group ? 'bg-emerald-50 border border-emerald-200' : 'bg-slate-50 border border-slate-200'}">
+                <div class="text-xs sm:text-sm font-extrabold ${hasIndividualConc || group ? 'text-emerald-950' : 'text-slate-800'}">${escapeHtml(concText)}</div>
+                ${hasIndividualConc ? `<p class="text-[10px] sm:text-[11px] font-semibold text-emerald-700 mt-0.5">Special individualized fee rate active for this student.</p>` : ''}
               </div>
             </div>
 
             ${group ? `
-              <div class="bg-white rounded-2xl border border-blue-200 bg-blue-50/30 p-4 shadow-xs">
-                <div class="flex items-center justify-between gap-2 mb-2">
-                  <h4 class="text-xs font-extrabold uppercase tracking-wider text-blue-900 flex items-center gap-1.5">
+              <div class="bg-white rounded-xl sm:rounded-2xl border border-blue-200 bg-blue-50/30 p-2.5 sm:p-4 shadow-xs">
+                <div class="flex items-center justify-between gap-1.5 mb-2">
+                  <h4 class="text-[11px] sm:text-xs font-extrabold uppercase tracking-wider text-blue-900 flex items-center gap-1.5">
                     <i class="fas fa-users text-blue-600"></i>
                     <span>Family / Sibling Group</span>
                   </h4>
-                  <span class="text-[11px] font-extrabold text-blue-900 bg-white border border-blue-200 px-2.5 py-0.5 rounded-full shadow-2xs">Fee: ₹${escapeHtml(String(group.fee || 0))}/mo</span>
+                  <span class="text-[10px] sm:text-[11px] font-extrabold text-blue-900 bg-white border border-blue-200 px-2 py-0.5 rounded-full shadow-2xs">Fee: ₹${escapeHtml(String(group.fee || 0))}/mo</span>
                 </div>
                 <div class="space-y-1.5">
                   ${getGroupMemberRows(group).map((member, index) => {
                     const isCurrent = member.id === student.id;
                     return `
-                      <div class="flex items-center justify-between gap-2 rounded-xl bg-white border ${isCurrent ? 'border-blue-400 bg-blue-50/60 font-black' : 'border-blue-100'} px-3 py-2 text-xs shadow-2xs">
+                      <div class="flex items-center justify-between gap-2 rounded-lg sm:rounded-xl bg-white border ${isCurrent ? 'border-blue-400 bg-blue-50/60 font-black' : 'border-blue-100'} px-2.5 py-1.5 sm:px-3 sm:py-2 text-xs shadow-2xs">
                         <span class="${isCurrent ? 'font-extrabold text-blue-950' : 'font-bold text-slate-800'} truncate">${index + 1}. ${escapeHtml(member.name || '--')} ${isCurrent ? '(This Student)' : ''}</span>
                         <div class="flex items-center gap-1.5 shrink-0">
-                          <span class="px-1.5 py-0.5 rounded bg-slate-100 text-slate-700 font-mono text-[10px] font-bold">Adm: ${escapeHtml(member.adm || '--')}</span>
-                          <span class="px-1.5 py-0.5 rounded bg-blue-50 text-blue-700 font-bold text-[10px]">Cls: ${escapeHtml(member.class || '--')}</span>
+                          <span class="px-1.5 py-0.5 rounded bg-slate-100 text-slate-700 font-mono text-[9px] sm:text-[10px] font-bold">Adm: ${escapeHtml(member.adm || '--')}</span>
+                          <span class="px-1.5 py-0.5 rounded bg-blue-50 text-blue-700 font-bold text-[9px] sm:text-[10px]">Cls: ${escapeHtml(member.class || '--')}</span>
                         </div>
                       </div>`;
                   }).join('')}
@@ -820,11 +820,11 @@ import { signInAnonymously, onAuthStateChanged, signInWithEmailAndPassword } fro
           </div>
 
           ${(student.busStop || student.busFee || student.route) ? `
-            <div class="p-3.5 rounded-2xl border border-amber-200 bg-amber-50/80 flex flex-wrap items-center justify-between gap-2 text-xs">
-              <div class="font-extrabold text-amber-800 uppercase tracking-wider text-[11px] flex items-center gap-1.5">
+            <div class="p-2.5 sm:p-3.5 rounded-xl sm:rounded-2xl border border-amber-200 bg-amber-50/80 flex flex-wrap items-center justify-between gap-2 text-xs">
+              <div class="font-extrabold text-amber-800 uppercase tracking-wider text-[10px] sm:text-[11px] flex items-center gap-1.5">
                 <i class="fas fa-bus text-amber-600"></i> Transport & Bus Service
               </div>
-              <div class="font-bold text-slate-900">
+              <div class="font-bold text-slate-900 text-[11px] sm:text-xs">
                 Stop: <b>${escapeHtml(student.busStop || '--')}</b> &nbsp;•&nbsp; Bus Fee: <b>₹${escapeHtml(String(student.busFee || 0))}</b> &nbsp;•&nbsp; Route: <b>${escapeHtml(student.route || '--')}</b>
               </div>
             </div>` : ''}
@@ -1137,91 +1137,91 @@ import { signInAnonymously, onAuthStateChanged, signInWithEmailAndPassword } fro
       stuTarget.innerHTML = `
         <div class="card p-3 sm:p-5 rounded-2xl shadow-sm w-full max-w-none">
           <!-- Top Header & Export Buttons -->
-          <div class="flex flex-wrap items-center justify-between gap-3 mb-4 pb-3 border-b border-slate-100">
+          <div class="flex items-center justify-between gap-2 sm:gap-3 mb-3 pb-2.5 border-b border-slate-100">
             <div>
-              <h3 class="font-extrabold text-lg text-slate-900 flex items-center gap-2">
+              <h3 class="font-extrabold text-base sm:text-lg text-slate-900 flex items-center gap-1.5 sm:gap-2">
                 <i class="fas fa-user-graduate text-blue-600"></i>
                 <span>Students Register</span>
-                <span class="text-xs font-extrabold px-2.5 py-0.5 rounded-full bg-blue-50 text-blue-700 border border-blue-200">${totalCount} Students</span>
+                <span class="text-[11px] sm:text-xs font-extrabold px-2 py-0.5 rounded-full bg-blue-50 text-blue-700 border border-blue-200">${totalCount}</span>
               </h3>
-              <p class="text-xs text-slate-500 font-semibold mt-0.5">Complete admin-entered student details with Academic Year filter, pagination, and Excel/PDF export.</p>
+              <p class="text-[11px] sm:text-xs text-slate-500 font-semibold mt-0.5 hidden sm:block">Complete admin-entered student details with Academic Year filter, pagination, and Excel/PDF export.</p>
             </div>
-            <div class="flex flex-wrap items-center gap-2">
-              <button type="button" id="btn-students-export-pdf" class="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-xs font-extrabold text-white bg-rose-600 hover:bg-rose-700 shadow-xs transition-all cursor-pointer">
+            <div class="flex items-center gap-1.5 sm:gap-2 shrink-0">
+              <button type="button" id="btn-students-export-pdf" class="inline-flex items-center gap-1 sm:gap-1.5 px-2.5 sm:px-3.5 py-1.5 sm:py-2 rounded-lg sm:rounded-xl text-[11px] sm:text-xs font-extrabold text-white bg-rose-600 hover:bg-rose-700 shadow-xs transition-all cursor-pointer">
                 <i class="fas fa-file-pdf"></i>
-                <span>PDF / Print</span>
+                <span>PDF<span class="hidden sm:inline"> / Print</span></span>
               </button>
-              <button type="button" id="btn-students-export-excel" class="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-xs font-extrabold text-white bg-emerald-600 hover:bg-emerald-700 shadow-xs transition-all cursor-pointer">
+              <button type="button" id="btn-students-export-excel" class="inline-flex items-center gap-1 sm:gap-1.5 px-2.5 sm:px-3.5 py-1.5 sm:py-2 rounded-lg sm:rounded-xl text-[11px] sm:text-xs font-extrabold text-white bg-emerald-600 hover:bg-emerald-700 shadow-xs transition-all cursor-pointer">
                 <i class="fas fa-file-excel"></i>
-                <span>Export Excel</span>
+                <span><span class="hidden sm:inline">Export </span>Excel</span>
               </button>
             </div>
           </div>
 
-          <!-- Clearly Visible Filter Input Controls -->
-          <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-6 gap-2.5 mb-4 bg-slate-50/80 p-3 rounded-2xl border border-slate-200/80">
+          <!-- Clearly Visible Filter Input Controls (2-column compact grid on mobile) -->
+          <div class="grid grid-cols-2 lg:grid-cols-6 gap-2 mb-3 bg-slate-50/80 p-2 sm:p-3 rounded-xl sm:rounded-2xl border border-slate-200/80">
             <div>
-              <label class="block text-[10px] font-extrabold uppercase tracking-wider text-slate-500 mb-1">Academic Year</label>
-              <select id="official-student-year" class="w-full p-2.5 rounded-xl border border-slate-300 bg-white text-xs sm:text-sm font-bold text-slate-800 shadow-2xs focus:border-blue-500">
+              <label class="block text-[9px] sm:text-[10px] font-extrabold uppercase tracking-wider text-slate-500 mb-0.5 sm:mb-1">Academic Year</label>
+              <select id="official-student-year" class="w-full py-1.5 sm:py-2 px-2 sm:px-2.5 rounded-lg sm:rounded-xl border border-slate-300 bg-white text-xs font-bold text-slate-800 shadow-2xs focus:border-blue-500">
                 ${yearOptionsHtml}
               </select>
             </div>
             <div>
-              <label class="block text-[10px] font-extrabold uppercase tracking-wider text-slate-500 mb-1">Class</label>
-              <select id="official-student-class" class="w-full p-2.5 rounded-xl border border-slate-300 bg-white text-xs sm:text-sm font-bold text-slate-800 shadow-2xs focus:border-blue-500">
+              <label class="block text-[9px] sm:text-[10px] font-extrabold uppercase tracking-wider text-slate-500 mb-0.5 sm:mb-1">Class</label>
+              <select id="official-student-class" class="w-full py-1.5 sm:py-2 px-2 sm:px-2.5 rounded-lg sm:rounded-xl border border-slate-300 bg-white text-xs font-bold text-slate-800 shadow-2xs focus:border-blue-500">
                 <option value="ALL" ${(!officialFilters.studentClass || officialFilters.studentClass === 'ALL') ? 'selected' : ''}>All Classes (${yearStudents.length})</option>
                 ${classOptions.map((className) => `<option value="${escapeHtml(className)}" ${officialFilters.studentClass === className ? 'selected' : ''}>Class ${escapeHtml(className)}</option>`).join('')}
               </select>
             </div>
             <div>
-              <label class="block text-[10px] font-extrabold uppercase tracking-wider text-slate-500 mb-1">Gender</label>
-              <select id="official-student-gender" class="w-full p-2.5 rounded-xl border border-slate-300 bg-white text-xs sm:text-sm font-bold text-slate-800 shadow-2xs focus:border-blue-500">
+              <label class="block text-[9px] sm:text-[10px] font-extrabold uppercase tracking-wider text-slate-500 mb-0.5 sm:mb-1">Gender</label>
+              <select id="official-student-gender" class="w-full py-1.5 sm:py-2 px-2 sm:px-2.5 rounded-lg sm:rounded-xl border border-slate-300 bg-white text-xs font-bold text-slate-800 shadow-2xs focus:border-blue-500">
                 <option value="ALL">All Genders</option>
                 <option value="Male" ${officialFilters.studentGender === 'Male' ? 'selected' : ''}>Male</option>
                 <option value="Female" ${officialFilters.studentGender === 'Female' ? 'selected' : ''}>Female</option>
               </select>
             </div>
             <div>
-              <label class="block text-[10px] font-extrabold uppercase tracking-wider text-slate-500 mb-1">Filter Category</label>
-              <select id="official-student-info" class="w-full p-2.5 rounded-xl border border-slate-300 bg-white text-xs sm:text-sm font-bold text-slate-800 shadow-2xs focus:border-blue-500">
+              <label class="block text-[9px] sm:text-[10px] font-extrabold uppercase tracking-wider text-slate-500 mb-0.5 sm:mb-1">Filter</label>
+              <select id="official-student-info" class="w-full py-1.5 sm:py-2 px-2 sm:px-2.5 rounded-lg sm:rounded-xl border border-slate-300 bg-white text-xs font-bold text-slate-800 shadow-2xs focus:border-blue-500">
                 <option value="ALL">All Students</option>
-                <option value="GROUPED" ${officialFilters.studentInfo === 'GROUPED' ? 'selected' : ''}>Grouped Students</option>
-                <option value="CONCESSION" ${officialFilters.studentInfo === 'CONCESSION' ? 'selected' : ''}>Fee Concession</option>
+                <option value="GROUPED" ${officialFilters.studentInfo === 'GROUPED' ? 'selected' : ''}>Grouped</option>
+                <option value="CONCESSION" ${officialFilters.studentInfo === 'CONCESSION' ? 'selected' : ''}>Concession</option>
                 <option value="MISSING_MOBILE" ${officialFilters.studentInfo === 'MISSING_MOBILE' ? 'selected' : ''}>Missing Mobile</option>
                 <option value="MISSING_UID" ${officialFilters.studentInfo === 'MISSING_UID' ? 'selected' : ''}>Missing UID</option>
               </select>
             </div>
-            <div class="sm:col-span-2">
-              <label class="block text-[10px] font-extrabold uppercase tracking-wider text-slate-500 mb-1">Search Student Details</label>
+            <div class="col-span-2">
+              <label class="block text-[9px] sm:text-[10px] font-extrabold uppercase tracking-wider text-slate-500 mb-0.5 sm:mb-1">Search Student</label>
               <div class="relative">
-                <i class="fas fa-search absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-xs"></i>
-                <input id="official-student-search" type="text" value="${escapeHtml(officialFilters.studentSearch)}" class="w-full pl-8 pr-3 py-2.5 rounded-xl border border-slate-300 bg-white text-xs sm:text-sm font-semibold text-slate-800 shadow-2xs focus:border-blue-500" placeholder="Search by name, adm no, UID, parent, phone, Aadhaar, address...">
+                <i class="fas fa-search absolute left-2.5 sm:left-3 top-1/2 -translate-y-1/2 text-slate-400 text-xs"></i>
+                <input id="official-student-search" type="text" value="${escapeHtml(officialFilters.studentSearch)}" class="w-full pl-7 sm:pl-8 pr-2.5 sm:pr-3 py-1.5 sm:py-2 rounded-lg sm:rounded-xl border border-slate-300 bg-white text-xs font-semibold text-slate-800 shadow-2xs focus:border-blue-500" placeholder="Search by name, adm no, UID, parent, mobile, Aadhaar...">
               </div>
             </div>
           </div>
 
           <!-- Top Pagination & Row Limit Bar -->
-          <div class="flex flex-wrap items-center justify-between gap-3 mb-3 px-3 py-2 rounded-xl bg-slate-100/80 border border-slate-200 text-xs">
-            <div class="flex items-center gap-2 font-bold text-slate-700">
-              <span>Show Rows:</span>
-              <select id="official-student-page-size" class="px-2.5 py-1 rounded-lg border border-slate-300 bg-white font-extrabold text-slate-800">
+          <div class="flex flex-wrap items-center justify-between gap-2 mb-3 px-2.5 py-1.5 sm:px-3 sm:py-2 rounded-xl bg-slate-100/80 border border-slate-200 text-xs">
+            <div class="flex items-center gap-1.5 font-bold text-slate-700">
+              <span class="text-[11px] sm:text-xs">Rows:</span>
+              <select id="official-student-page-size" class="px-2 py-1 rounded-lg border border-slate-300 bg-white font-extrabold text-slate-800 text-[11px] sm:text-xs">
                 <option value="10" ${officialFilters.studentPageSize === 10 ? 'selected' : ''}>10</option>
                 <option value="25" ${officialFilters.studentPageSize === 25 ? 'selected' : ''}>25</option>
                 <option value="50" ${officialFilters.studentPageSize === 50 ? 'selected' : ''}>50</option>
                 <option value="100" ${officialFilters.studentPageSize === 100 ? 'selected' : ''}>100</option>
                 <option value="0" ${officialFilters.studentPageSize === 0 ? 'selected' : ''}>All (${totalCount})</option>
               </select>
-              <span class="text-slate-500 ml-1">
-                Showing <b class="text-slate-900">${totalCount ? startIdx + 1 : 0}</b>–<b class="text-slate-900">${endIdx}</b> of <b class="text-slate-900">${totalCount}</b>
+              <span class="text-slate-500 text-[11px] sm:text-xs ml-0.5">
+                <b class="text-slate-900">${totalCount ? startIdx + 1 : 0}</b>–<b class="text-slate-900">${endIdx}</b> of <b class="text-slate-900">${totalCount}</b>
               </span>
             </div>
-            <div class="flex items-center gap-2">
-              <button type="button" id="official-stu-prev" ${officialFilters.studentPage <= 1 ? 'disabled' : ''} class="px-3 py-1.5 rounded-lg border border-slate-300 bg-white font-extrabold text-slate-700 hover:bg-slate-50 disabled:opacity-40 disabled:pointer-events-none cursor-pointer">
-                <i class="fas fa-chevron-left mr-1 text-[10px]"></i> Previous
+            <div class="flex items-center gap-1.5">
+              <button type="button" id="official-stu-prev" ${officialFilters.studentPage <= 1 ? 'disabled' : ''} class="px-2.5 py-1 rounded-lg border border-slate-300 bg-white font-extrabold text-slate-700 hover:bg-slate-50 disabled:opacity-40 disabled:pointer-events-none cursor-pointer text-[11px] sm:text-xs">
+                <i class="fas fa-chevron-left mr-0.5 text-[9px]"></i> Prev
               </button>
-              <span class="font-extrabold text-slate-700 px-2">Page ${officialFilters.studentPage} of ${totalPages}</span>
-              <button type="button" id="official-stu-next" ${officialFilters.studentPage >= totalPages ? 'disabled' : ''} class="px-3 py-1.5 rounded-lg border border-slate-300 bg-white font-extrabold text-slate-700 hover:bg-slate-50 disabled:opacity-40 disabled:pointer-events-none cursor-pointer">
-                Next <i class="fas fa-chevron-right ml-1 text-[10px]"></i>
+              <span class="font-extrabold text-slate-700 px-1 text-[11px] sm:text-xs">${officialFilters.studentPage}/${totalPages}</span>
+              <button type="button" id="official-stu-next" ${officialFilters.studentPage >= totalPages ? 'disabled' : ''} class="px-2.5 py-1 rounded-lg border border-slate-300 bg-white font-extrabold text-slate-700 hover:bg-slate-50 disabled:opacity-40 disabled:pointer-events-none cursor-pointer text-[11px] sm:text-xs">
+                Next <i class="fas fa-chevron-right ml-0.5 text-[9px]"></i>
               </button>
             </div>
           </div>
