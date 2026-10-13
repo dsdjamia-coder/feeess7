@@ -133,7 +133,6 @@
                     <div class="nav-group-heading">Students &amp; Class</div>
                     <ul class="nav-sub-list-static" data-group-list="students">
                         <li><a href="#students" class="nav-link nav-sub-link tab-link" data-target="students-page" data-main-group="students"><i class="fas fa-user-graduate text-sm w-5"></i> Students</a></li>
-                        <li><a href="#my-class" class="nav-link nav-sub-link tab-link" data-target="my-class-page" data-main-group="students"><i class="fas fa-school text-sm w-5"></i> My Class</a></li>
                     </ul>
                 </li>
                 
@@ -615,34 +614,6 @@
                     <h2 class="text-xl font-bold mb-4 text-gray-800 border-b pb-2">Collector-wise Monthly Total</h2>
                     <p class="text-xs text-gray-500 font-medium mb-4">Admin view: monthly split by collector with default fee and other fee totals.</p>
                     <div id="collector-wise-monthly-container" class="space-y-4"></div>
-                </div>
-            </section>
-
-            <!-- 5.1 My Class Duty -->
-            <section id="my-class-page" class="page-content hidden">
-                <div class="card p-5 shadow-sm">
-                    <h2 class="text-xl font-bold mb-3 text-gray-800 border-b pb-2">My Class Duty</h2>
-                    <p class="text-xs text-gray-500 font-semibold mb-4">Select the classes assigned to you. Students in these classes will see your payment details when they log in.</p>
-                    <div id="my-class-list" class="grid grid-cols-2 sm:grid-cols-3 gap-2"></div>
-                    <div class="mt-4 border-t pt-4">
-                        <h3 class="text-sm font-bold text-gray-700 mb-2">Duty Class Payment Account (UPI Details)</h3>
-                        <div class="grid grid-cols-1 md:grid-cols-3 gap-3">
-                            <input type="text" id="duty-pay-account-name" class="w-full p-2.5 border rounded-lg bg-gray-50 focus:border-blue-400 focus:bg-white transition" placeholder="Account Holder Name">
-                            <input type="text" id="duty-pay-upi-number" class="w-full p-2.5 border rounded-lg bg-gray-50 focus:border-blue-400 focus:bg-white transition" placeholder="GPay / PhonePe Number">
-                            <input type="text" id="duty-pay-upi-id" class="w-full p-2.5 border rounded-lg bg-gray-50 focus:border-blue-400 focus:bg-white transition" placeholder="UPI ID (eg: name@okicici)">
-                        </div>
-                    </div>
-                    <div class="mt-4 flex items-center gap-3">
-                        <button id="save-my-class-btn" class="btn-primary font-bold py-2.5 px-6 rounded-lg shadow-md transition-transform hover:scale-105">
-                            <i class="fas fa-save mr-2"></i> Save Details
-                        </button>
-                        <span id="my-class-save-msg" class="text-sm font-bold text-emerald-600 transition-opacity duration-300"></span>
-                    </div>
-                    <div class="mt-6 border-t pt-4">
-                        <h3 class="text-sm font-bold text-gray-700 mb-2">Staff Directory</h3>
-                        <p class="text-xs text-gray-500 mb-3">Other staff members and their assigned classes.</p>
-                        <div id="collection-staff-directory" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3"></div>
-                    </div>
                 </div>
             </section>
 

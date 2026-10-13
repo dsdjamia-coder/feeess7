@@ -54,6 +54,8 @@ const PAGE_PERMISSIONS = {
     dashboard: 'dashboard.view',
     'fee-manager': 'fees.manage',
     'academic-years': 'academic-years.manage',
+    'add-staff': 'staff.manage',
+    'staff-management': 'staff.manage',
     'manage-staff': 'staff.manage',
     'add-students': 'students.manage',
     'manage-students': 'students.manage',
@@ -1062,7 +1064,8 @@ window.addEventListener('resize', () => {
 
 const activateAdminPage = (targetId, options = {}) => {
     const { suppressDeniedAlert = false, pushHistory = true } = options;
-    if (targetId === 'web-directory' || targetId === 'web-directory-entries') targetId = 'manage-staff';
+    if (targetId === 'web-directory' || targetId === 'web-directory-entries') targetId = 'add-staff';
+    if (targetId === 'manage-staff') targetId = 'staff-management';
     const setupReady = enforceSetupGate();
     if (!setupReady && !['dashboard', 'academic-years', 'manage-classes'].includes(targetId)) {
         if (!suppressDeniedAlert) alert('Complete Academic Year and Class setup first.');
@@ -1078,7 +1081,10 @@ const activateAdminPage = (targetId, options = {}) => {
         link.classList.toggle('active', href === `#${targetId}`);
     });
     document.querySelectorAll('.page').forEach((page) => page.classList.add('hidden'));
-    document.getElementById(`${targetId}-page`).classList.remove('hidden');
+    const targetPageEl = document.getElementById(`${targetId}-page`);
+    if (targetPageEl) {
+        targetPageEl.classList.remove('hidden');
+    }
 
     if(targetId === 'dashboard') renderDashboard();
     if(targetId === 'academic-years') renderAcademicYears();
@@ -1086,7 +1092,8 @@ const activateAdminPage = (targetId, options = {}) => {
     if(targetId === 'manage-classes') { populateClassDropdowns(); renderClassList(); }
     if(targetId === 'manage-groups') renderStudentGroups();
     if(targetId === 'results') renderResultManagement();
-    if(targetId === 'manage-staff') { renderDirectoryCategories(); renderStaffList(); }
+    if(targetId === 'add-staff') { renderDirectoryCategories(); }
+    if(targetId === 'staff-management' || targetId === 'manage-staff') { renderStaffList(); }
     if(targetId === 'fee-settings') renderFeeItemsManagement();
     if(targetId === 'fee-concessions') { populateClassDropdowns(); renderConcessionsList(); }
     if(targetId === 'web-directory') { renderDirectoryCategories(); }
@@ -1879,6 +1886,16 @@ const renderStaffList = () => {
             .filter(Boolean)
             .join('');
 
+        const dutyClasses = Array.isArray(staffMember.dutyClasses) ? staffMember.dutyClasses.filter(Boolean) : [];
+        const dutyClassBadges = dutyClasses.length
+            ? dutyClasses.map((cls) => `<span class="text-[10px] font-bold px-2 py-0.5 rounded-full bg-blue-50 text-blue-700 border border-blue-200"><i class="fas fa-school mr-1"></i>${escapeHtml(cls)}</span>`).join(' ')
+            : '<span class="text-[10px] text-gray-400 italic">No classes assigned</span>';
+
+        const hasUpi = staffMember.dutyPaymentDetails && (staffMember.dutyPaymentDetails.upiId || staffMember.dutyPaymentDetails.upiNumber);
+        const upiBadge = hasUpi
+            ? `<span class="text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200" title="UPI: ${escapeHtml(staffMember.dutyPaymentDetails.upiId || staffMember.dutyPaymentDetails.upiNumber)}"><i class="fas fa-wallet mr-1"></i>UPI Set</span>`
+            : '';
+
         return `
             <div class="flex flex-col sm:flex-row justify-between p-4 bg-white border border-gray-200 rounded-xl shadow-sm items-start sm:items-center gap-4 transition hover:shadow-md mb-2">
                 <div class="flex gap-4 items-center w-full sm:w-auto">
@@ -1891,6 +1908,11 @@ const renderStaffList = () => {
                             ${staffMember.email ? `<span class="text-xs text-blue-600 bg-blue-50 px-2 py-0.5 rounded font-mono">Email: ${escapeHtml(staffMember.email)}</span>` : ''}
                             ${customBadges}
                         </div>
+                        <div class="mt-2 flex flex-wrap gap-1.5 items-center">
+                            <span class="text-[10px] font-bold uppercase tracking-wider text-slate-500 mr-0.5">Classes:</span>
+                            ${dutyClassBadges}
+                            ${upiBadge}
+                        </div>
                         <div class="mt-2 flex flex-wrap gap-1.5">
                             ${staffMember.isActive ? '<span class="text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200"><i class="fas fa-check-circle mr-1"></i>Active</span>' : '<span class="text-[10px] font-bold px-2 py-0.5 rounded-full bg-gray-100 text-gray-600 border border-gray-200">Inactive</span>'}
                             ${staffMember.showPublic !== false ? '<span class="text-[10px] font-bold px-2 py-0.5 rounded-full bg-sky-50 text-sky-700 border border-sky-200"><i class="fas fa-globe mr-1"></i>Public Page</span>' : '<span class="text-[10px] font-bold px-2 py-0.5 rounded-full bg-gray-100 text-gray-600 border border-gray-200">Hidden Public</span>'}
@@ -1901,11 +1923,12 @@ const renderStaffList = () => {
                         </div>
                     </div>
                 </div>
-                <div class="flex gap-2 w-full sm:w-auto mt-2 sm:mt-0">
-                    <button class="px-4 py-2 bg-blue-50 text-blue-700 rounded-lg text-sm font-bold flex-1 hover:bg-blue-100 transition staff-action-btn" data-action="edit" data-id="${staffMember.id}"><i class="fas fa-edit"></i> Edit</button>
-                    <button class="px-4 py-2 bg-violet-50 text-violet-700 rounded-lg text-sm font-bold flex-1 hover:bg-violet-100 transition staff-action-btn" data-action="credential" data-id="${staffMember.id}"><i class="fas fa-key"></i> Reset Login</button>
-                    <button class="px-4 py-2 ${isAct ? 'bg-amber-50 text-amber-700 hover:bg-amber-100' : 'bg-green-50 text-green-700 hover:bg-green-100'} rounded-lg text-sm font-bold flex-1 transition staff-action-btn" data-action="toggle" data-id="${staffMember.id}" data-next-state="${isAct ? 'false' : 'true'}"><i class="fas ${isAct ? 'fa-ban' : 'fa-check-circle'}"></i> ${isAct ? 'Deactivate' : 'Activate'}</button>
-                    <button class="px-4 py-2 bg-red-50 text-red-700 rounded-lg text-sm font-bold flex-1 hover:bg-red-100 transition staff-action-btn" data-action="delete" data-id="${staffMember.id}"><i class="fas fa-trash"></i></button>
+                <div class="flex flex-wrap gap-2 w-full sm:w-auto mt-2 sm:mt-0">
+                    <button class="px-3.5 py-2 bg-indigo-50 text-indigo-700 rounded-lg text-xs font-bold hover:bg-indigo-100 transition staff-action-btn flex items-center justify-center gap-1" data-action="duty" data-id="${staffMember.id}" title="Assign Duty Classes & UPI Details"><i class="fas fa-school"></i> Duty Classes &amp; UPI</button>
+                    <button class="px-3.5 py-2 bg-blue-50 text-blue-700 rounded-lg text-xs font-bold hover:bg-blue-100 transition staff-action-btn" data-action="edit" data-id="${staffMember.id}"><i class="fas fa-edit"></i> Edit</button>
+                    <button class="px-3.5 py-2 bg-violet-50 text-violet-700 rounded-lg text-xs font-bold hover:bg-violet-100 transition staff-action-btn" data-action="credential" data-id="${staffMember.id}"><i class="fas fa-key"></i> Login</button>
+                    <button class="px-3.5 py-2 ${isAct ? 'bg-amber-50 text-amber-700 hover:bg-amber-100' : 'bg-green-50 text-green-700 hover:bg-green-100'} rounded-lg text-xs font-bold transition staff-action-btn" data-action="toggle" data-id="${staffMember.id}" data-next-state="${isAct ? 'false' : 'true'}"><i class="fas ${isAct ? 'fa-ban' : 'fa-check-circle'}"></i> ${isAct ? 'Deactivate' : 'Activate'}</button>
+                    <button class="px-3.5 py-2 bg-red-50 text-red-700 rounded-lg text-xs font-bold hover:bg-red-100 transition staff-action-btn" data-action="delete" data-id="${staffMember.id}"><i class="fas fa-trash"></i></button>
                 </div>
             </div>`;
     }).join('');
@@ -1976,14 +1999,138 @@ window.openEditStaff = (id) => {
     if (eSuperEl) eSuperEl.checked = s.actLikeSuperAdmin === true;
     document.getElementById('edit-staff-popup').classList.remove('hidden'); document.getElementById('edit-staff-popup').classList.add('flex');
 };
-document.getElementById('manage-staff-page').addEventListener('click', (e) => {
+const handleStaffActionClick = (e) => {
     const button = e.target.closest('.staff-action-btn');
     if (!button) return;
     const { action, id, nextState } = button.dataset;
+    if (action === 'duty') window.openStaffDutyModal(id);
     if (action === 'edit') window.openEditStaff(id);
     if (action === 'credential') window.resetStaffCredentials(id);
     if (action === 'toggle') window.toggleStaffStatus(id, nextState === 'true');
     if (action === 'delete') window.deleteStaff(id);
+};
+document.getElementById('staff-management-page')?.addEventListener('click', handleStaffActionClick);
+document.getElementById('manage-staff-page')?.addEventListener('click', handleStaffActionClick);
+
+window.openStaffDutyModal = (id) => {
+    if(!requirePermission('staff.manage')) return;
+    const staffRecord = allStaff.find(st => st.id === id);
+    if (!staffRecord) return;
+
+    const popup = document.getElementById('staff-duty-popup');
+    if (!popup) return;
+
+    document.getElementById('staff-duty-staff-id').value = staffRecord.id;
+    const subEl = document.getElementById('staff-duty-subtitle');
+    if (subEl) {
+        subEl.textContent = `Staff: ${staffRecord.name || '--'} (${getStaffTypeLabel(staffRecord.type)} - ${staffRecord.role || 'Staff'})`;
+    }
+
+    const grid = document.getElementById('staff-duty-classes-grid');
+    if (grid) {
+        classes = getClassesForActiveYear();
+        const existingDutyClasses = Array.isArray(staffRecord.dutyClasses) ? staffRecord.dutyClasses.filter(Boolean) : [];
+        if (!classes.length) {
+            grid.innerHTML = '<p class="col-span-full text-xs text-gray-500 italic p-2">No classes configured for active academic year. Please add classes in Classes &amp; Divisions first.</p>';
+        } else {
+            grid.innerHTML = classes.map((cls) => {
+                const checked = existingDutyClasses.includes(cls) ? 'checked' : '';
+                return `
+                    <label class="flex items-center gap-2 bg-white border border-slate-200 rounded-lg p-2 text-xs font-semibold cursor-pointer hover:bg-blue-50 transition">
+                        <input type="checkbox" class="staff-duty-checkbox w-4 h-4 text-indigo-600 rounded" value="${escapeHtml(cls)}" ${checked}>
+                        <span class="text-slate-800 truncate">${escapeHtml(cls)}</span>
+                    </label>
+                `;
+            }).join('');
+        }
+    }
+
+    const payDetails = staffRecord.dutyPaymentDetails || {};
+    const accInput = document.getElementById('staff-duty-account-name');
+    const numInput = document.getElementById('staff-duty-upi-number');
+    const idInput = document.getElementById('staff-duty-upi-id');
+    if (accInput) accInput.value = payDetails.accountName || '';
+    if (numInput) numInput.value = payDetails.upiNumber || '';
+    if (idInput) idInput.value = payDetails.upiId || '';
+
+    popup.classList.remove('hidden');
+    popup.classList.add('flex');
+};
+
+const closeStaffDutyModal = () => {
+    const popup = document.getElementById('staff-duty-popup');
+    if (popup) {
+        popup.classList.add('hidden');
+        popup.classList.remove('flex');
+    }
+};
+
+document.getElementById('staff-duty-close-btn')?.addEventListener('click', closeStaffDutyModal);
+document.getElementById('staff-duty-cancel-btn')?.addEventListener('click', closeStaffDutyModal);
+
+document.getElementById('staff-duty-select-all')?.addEventListener('click', () => {
+    document.querySelectorAll('.staff-duty-checkbox').forEach((cb) => { cb.checked = true; });
+});
+
+document.getElementById('staff-duty-clear-all')?.addEventListener('click', () => {
+    document.querySelectorAll('.staff-duty-checkbox').forEach((cb) => { cb.checked = false; });
+});
+
+document.getElementById('staff-duty-save-btn')?.addEventListener('click', async () => {
+    if(!requirePermission('staff.manage')) return;
+    const staffId = document.getElementById('staff-duty-staff-id')?.value;
+    if (!staffId) return;
+
+    const staffRecord = allStaff.find(st => st.id === staffId);
+    if (!staffRecord) return;
+
+    const selectedClasses = Array.from(document.querySelectorAll('.staff-duty-checkbox:checked')).map((cb) => cb.value);
+    const accountName = String(document.getElementById('staff-duty-account-name')?.value || '').trim();
+    const upiNumber = String(document.getElementById('staff-duty-upi-number')?.value || '').trim();
+    const upiId = String(document.getElementById('staff-duty-upi-id')?.value || '').trim();
+
+    const dutyPaymentDetails = {
+        accountName,
+        upiNumber,
+        upiId
+    };
+
+    const saveBtn = document.getElementById('staff-duty-save-btn');
+    const originalBtnHtml = saveBtn ? saveBtn.innerHTML : '';
+    if (saveBtn) {
+        saveBtn.disabled = true;
+        saveBtn.innerHTML = '<i class="fas fa-spinner fa-spin mr-1.5"></i> Saving...';
+    }
+
+    try {
+        await updateDoc(doc(db, `${BASE_PATH}/staff`, staffId), {
+            dutyClasses: selectedClasses,
+            dutyPaymentDetails,
+            updatedAt: new Date().toISOString()
+        });
+
+        staffRecord.dutyClasses = selectedClasses;
+        staffRecord.dutyPaymentDetails = dutyPaymentDetails;
+
+        await logAuditEvent({
+            category: 'staff',
+            action: 'staff.duty_classes.update',
+            entityType: 'staff',
+            entityId: staffId,
+            message: `Updated duty classes (${selectedClasses.join(', ') || 'none'}) and UPI account for ${staffRecord.name || staffId}.`
+        });
+
+        closeStaffDutyModal();
+        renderStaffList();
+    } catch (err) {
+        console.error('Failed to update staff duty classes and payment details', err);
+        alert('Failed to save duty classes and payment details. Please check connection and try again.');
+    } finally {
+        if (saveBtn) {
+            saveBtn.disabled = false;
+            saveBtn.innerHTML = originalBtnHtml || '<i class="fas fa-save"></i> Save Details';
+        }
+    }
 });
 document.getElementById('staff-filter-search')?.addEventListener('input', renderStaffList);
 document.getElementById('staff-filter-type')?.addEventListener('change', renderStaffList);
@@ -5451,7 +5598,7 @@ const renderDirectoryCategories = () => {
     renderDirectoryAccessConfig();
     renderOverrideEntryOptions();
     renderStaffTypeControls();
-    if(!document.getElementById('manage-staff-page')?.classList.contains('hidden')) renderStaffList();
+    if(!document.getElementById('staff-management-page')?.classList.contains('hidden') || !document.getElementById('manage-staff-page')?.classList.contains('hidden')) renderStaffList();
 };
 
 const openEditStaffCategory = (categoryId) => {
@@ -6694,7 +6841,7 @@ onAuthStateChanged(auth, async (user) => {
             allStaff = snap.docs.map(d => ({id: d.id, ...d.data()}));
             await rebuildStaffAccessIndex(allStaff);
             renderDashboard();
-            if(!document.getElementById('manage-staff-page').classList.contains('hidden')) renderStaffList();
+            if(!document.getElementById('staff-management-page')?.classList.contains('hidden') || !document.getElementById('manage-staff-page')?.classList.contains('hidden')) renderStaffList();
         });
 
         onSnapshot(collection(db, `${BASE_PATH}/studentGroups`), (snap) => {

@@ -151,7 +151,7 @@ const MAIN_TAB_GROUPS = {
     collection: ['home-page', 'bulk-upload-page', 'donation-page'],
     ledgers: ['fee-page', 'master-ledger-page', 'conc-group-page'],
     reports: ['history-page', 'monthly-collected-page', 'collector-wise-monthly-page'],
-    students: ['students-page', 'my-class-page']
+    students: ['students-page']
 };
 
 const links = Array.from(document.querySelectorAll('.tab-link'));
@@ -4506,15 +4506,12 @@ onAuthStateChanged(auth, async (user) => {
                 currentCollectorKey = normalizeEmail(window.AppSession?.getStaffAccess?.()?.userKey || myData.email || currentUserEmail);
                 displayEl.textContent = myData.name;
                 window.AppSession?.startStaff(myData.name, currentUserEmail);
-                const localDutyClasses = readDutyClassesFromLocal();
                 const serverDutyClasses = Array.isArray(myData.dutyClasses) ? myData.dutyClasses.filter(Boolean) : [];
-                selectedDutyClasses = localDutyClasses.length ? localDutyClasses : serverDutyClasses;
+                selectedDutyClasses = serverDutyClasses;
                 localStorage.setItem(getDutyStorageKey(), JSON.stringify(selectedDutyClasses));
 
-                const localDutyPayment = readDutyPaymentFromLocal();
                 const serverDutyPayment = (myData.dutyPaymentDetails && typeof myData.dutyPaymentDetails === 'object') ? myData.dutyPaymentDetails : {};
-                const preferredDutyPayment = hasDutyPaymentDetails(localDutyPayment) ? localDutyPayment : serverDutyPayment;
-                collectorPaymentDetails = { ...collectorPaymentDetails, ...preferredDutyPayment };
+                collectorPaymentDetails = serverDutyPayment;
                 localStorage.setItem(getDutyPaymentStorageKey(), JSON.stringify(collectorPaymentDetails));
                 setResultPageNavVisibility(myData.canManageResults === true || staffAccess?.result === true);
             } else {
