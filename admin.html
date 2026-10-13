@@ -470,7 +470,7 @@
                         <h2 class="text-xl font-bold text-blue-900"><i class="fas fa-file-excel text-green-600 mr-2"></i>Bulk Upload (CSV/Excel)</h2>
                         <button onclick="window.downloadCSVTemplate()" class="bg-white border border-gray-300 text-gray-700 hover:bg-gray-50 px-4 py-2 rounded-lg text-sm font-bold shadow-sm flex items-center gap-2"><i class="fas fa-download text-blue-600"></i> Download CSV Template</button>
                     </div>
-                    <p class="text-sm text-gray-600 mb-4">Upload ചെയ്യുന്നതിന് മുമ്പ് <b>Class</b> dropdown-ൽ select ചെയ്യണം. Header names-ൽ ചെറിയ വ്യത്യാസങ്ങൾ (capital/small/underscore/dot) വന്നാലും auto-detect ചെയ്യും.</p>
+                    <p class="text-sm text-gray-600 mb-4">Select target <b>Class</b> before uploading. Header variations such as <b>DOB</b>, <b>Adm. Date</b>, <b>Adm_No</b>, etc. and dates in <b>DD-MM-YYYY</b> format are automatically detected and converted.</p>
                     <div class="mb-3">
                         <label class="block text-sm font-semibold mb-1 text-blue-800">Target Class for Bulk Upload <span class="mandatory-star">*</span></label>
                         <select id="bulk-upload-class" class="w-full p-2.5 border rounded-lg bg-white">
@@ -478,7 +478,13 @@
                         </select>
                     </div>
                     <div class="upload-area" id="excel-drop-zone"><input type="file" id="excel-file-input" accept=".xlsx, .xls, .csv" class="hidden"><i class="fas fa-cloud-upload-alt text-4xl text-blue-400 mb-3"></i><p class="font-semibold text-gray-700">Click to select or drag and drop CSV/Excel file here</p></div>
-                    <div id="excel-preview-area" class="mt-4 hidden p-4 bg-white border rounded-lg shadow-sm"><div class="flex justify-between items-center mb-2"><span class="font-bold text-gray-800" id="excel-file-name">filename.csv</span><span class="text-sm font-semibold bg-green-100 text-green-700 px-3 py-1 rounded-full" id="excel-record-count">Found 0 records</span></div><div class="progress-bar" id="upload-progress-bar"><div class="progress-fill" id="upload-progress-fill"></div></div><p class="text-xs text-center mt-2 text-gray-500 font-mono" id="upload-status-text"></p><div class="mt-4 text-right"><button id="cancel-upload-btn" class="px-4 py-2 bg-gray-200 text-gray-700 font-bold rounded-lg mr-2">Cancel</button><button id="start-upload-btn" class="btn-primary px-6 py-2 font-bold rounded-lg"><i class="fas fa-upload mr-2"></i>Start Upload</button></div></div>
+                    <div id="excel-preview-area" class="mt-4 hidden p-4 bg-white border rounded-lg shadow-sm">
+                        <div class="flex justify-between items-center mb-2"><span class="font-bold text-gray-800" id="excel-file-name">filename.csv</span><span class="text-sm font-semibold bg-green-100 text-green-700 px-3 py-1 rounded-full" id="excel-record-count">Found 0 records</span></div>
+                        <div id="excel-preview-table-container" class="my-3 overflow-x-auto max-h-56 border border-gray-200 rounded-lg hidden"></div>
+                        <div class="progress-bar" id="upload-progress-bar"><div class="progress-fill" id="upload-progress-fill"></div></div>
+                        <p class="text-xs text-center mt-2 text-gray-500 font-mono" id="upload-status-text"></p>
+                        <div class="mt-4 text-right"><button id="cancel-upload-btn" class="px-4 py-2 bg-gray-200 text-gray-700 font-bold rounded-lg mr-2">Cancel</button><button id="start-upload-btn" class="btn-primary px-6 py-2 font-bold rounded-lg"><i class="fas fa-upload mr-2"></i>Start Upload</button></div>
+                    </div>
                 </div>
             </section>
 
@@ -1154,7 +1160,7 @@
                         <i id="e-stu-photo-placeholder" class="fas fa-user text-3xl text-slate-400"></i>
                     </div>
                     <div class="flex-1 text-center sm:text-left space-y-1.5">
-                        <label class="block text-xs font-black text-slate-700">Student Profile Photo (Max 50KB)</label>
+                        <label class="block text-xs font-black text-slate-700">1. Student Profile Photo (Max 50KB)</label>
                         <div class="flex flex-wrap gap-2 justify-center sm:justify-start">
                             <button type="button" id="e-stu-camera-btn" class="px-3 py-1.5 bg-blue-50 hover:bg-blue-100 text-blue-700 border border-blue-200 rounded-md font-bold text-xs flex items-center gap-1 shadow-sm transition-all"><i class="fas fa-camera"></i> Camera</button>
                             <button type="button" id="e-stu-upload-btn" class="px-3 py-1.5 bg-white hover:bg-gray-50 text-gray-700 border border-gray-200 rounded-md font-bold text-xs flex items-center gap-1 shadow-sm transition-all"><i class="fas fa-upload"></i> Upload</button>
@@ -1164,21 +1170,21 @@
                         <input type="file" id="e-stu-file-input" accept="image/*" class="hidden">
                     </div>
                 </div>
-                <div class="col-span-1 lg:col-span-2"><label class="block text-sm font-semibold mb-1">Class</label><input type="text" id="e-stu-class" class="w-full p-2.5 border rounded-lg bg-white"></div>
-                <div class="col-span-1 lg:col-span-2"><label class="block text-sm font-semibold mb-1">ID/UID</label><input type="text" id="e-stu-uid" class="w-full p-2.5 border rounded-lg bg-white"></div>
-                <div class="col-span-1 lg:col-span-2"><label class="block text-sm font-semibold mb-1">Student Name</label><input type="text" id="e-stu-name" class="w-full p-2.5 border rounded-lg bg-white"></div>
-                <div class="col-span-1 lg:col-span-2"><label class="block text-sm font-semibold mb-1">Father's Name</label><input type="text" id="e-stu-fat" class="w-full p-2.5 border rounded-lg bg-white"></div>
-                <div class="col-span-1 lg:col-span-2"><label class="block text-sm font-semibold mb-1">Mother's Name</label><input type="text" id="e-stu-mother" class="w-full p-2.5 border rounded-lg bg-white"></div>
-                <div class="col-span-1 lg:col-span-2"><label class="block text-sm font-semibold mb-1">Gender</label><select id="e-stu-gender" class="w-full p-2.5 border rounded-lg bg-white"><option value="Male">Male</option><option value="Female">Female</option></select></div>
-                <div class="col-span-1 lg:col-span-2"><label class="block text-sm font-semibold mb-1">Admission Number (Adm. No.)</label><input type="text" id="e-stu-adm" class="w-full p-2.5 border rounded-lg bg-white"></div>
-                <div class="col-span-1 lg:col-span-2"><label class="block text-sm font-semibold mb-1">Date of Birth</label><input type="date" id="e-stu-dob" class="w-full p-2.5 border rounded-lg bg-white"></div>
-                <div class="col-span-1 lg:col-span-2"><label class="block text-sm font-semibold mb-1">Date of Admission</label><input type="date" id="e-stu-adm-date" class="w-full p-2.5 border rounded-lg bg-white"></div>
-                <div class="col-span-1 lg:col-span-2"><label class="block text-sm font-semibold mb-1">Student Status</label><select id="e-stu-status" class="w-full p-2.5 border rounded-lg bg-white"><option value="Active">Active</option><option value="Inactive">Inactive</option><option value="Graduated">Graduated</option></select></div>
-                <div class="col-span-1 lg:col-span-2"><label class="block text-sm font-semibold mb-1">Aadhaar Number</label><input type="text" id="e-stu-adhaar" class="w-full p-2.5 border rounded-lg bg-white" placeholder="Aadhaar No."></div>
-                <div class="col-span-1 lg:col-span-2"><label class="block text-sm font-semibold mb-1">Father's Phone Number</label><input type="tel" id="e-stu-mob" class="w-full p-2.5 border rounded-lg bg-white" placeholder="Father's Phone Number"></div>
-                <div class="col-span-1 lg:col-span-2"><label class="block text-sm font-semibold mb-1">Mother's Phone Number</label><input type="tel" id="e-stu-mother-mobile" class="w-full p-2.5 border rounded-lg bg-white" placeholder="Mother's Phone Number"></div>
-                <div class="col-span-1 lg:col-span-2"><label class="block text-sm font-semibold mb-1">Samastha ID</label><input type="text" id="e-stu-samastha" class="w-full p-2.5 border rounded-lg bg-white" placeholder="Samastha ID"></div>
-                <div class="col-span-1 lg:col-span-4"><label class="block text-sm font-semibold mb-1">Permanent Address</label><textarea id="e-stu-addr" rows="2" class="w-full p-2.5 border rounded-lg bg-white" placeholder="Permanent Address"></textarea></div>
+                <div class="col-span-1 lg:col-span-2"><label class="block text-sm font-semibold mb-1">2. Class <span class="mandatory-star">*</span></label><input type="text" id="e-stu-class" list="class-suggestions" class="w-full p-2.5 border rounded-lg bg-white" placeholder="e.g. 10 A"></div>
+                <div class="col-span-1 lg:col-span-2"><label class="block text-sm font-semibold mb-1">3. ID/UID</label><input type="text" id="e-stu-uid" class="w-full p-2.5 border rounded-lg bg-white" placeholder="Unique ID"></div>
+                <div class="col-span-1 lg:col-span-2"><label class="block text-sm font-semibold mb-1">4. Student Name <span class="mandatory-star">*</span></label><input type="text" id="e-stu-name" class="w-full p-2.5 border rounded-lg bg-white" placeholder="Full Name (Will auto capitalize)"></div>
+                <div class="col-span-1 lg:col-span-2"><label class="block text-sm font-semibold mb-1">5. Father's Name</label><input type="text" id="e-stu-fat" class="w-full p-2.5 border rounded-lg bg-white" placeholder="Father's Name"></div>
+                <div class="col-span-1 lg:col-span-2"><label class="block text-sm font-semibold mb-1">6. Mother's Name</label><input type="text" id="e-stu-mother" class="w-full p-2.5 border rounded-lg bg-white" placeholder="Mother's Name"></div>
+                <div class="col-span-1 lg:col-span-2"><label class="block text-sm font-semibold mb-1">7. Gender <span class="mandatory-star">*</span></label><select id="e-stu-gender" class="w-full p-2.5 border rounded-lg bg-white"><option value="Male">Male</option><option value="Female">Female</option></select></div>
+                <div class="col-span-1 lg:col-span-2"><label class="block text-sm font-semibold mb-1">8. Admission Number (Adm. No.)</label><input type="text" id="e-stu-adm" class="w-full p-2.5 border rounded-lg bg-white" placeholder="Admission Number"></div>
+                <div class="col-span-1 lg:col-span-2"><label class="block text-sm font-semibold mb-1">9. Date of Birth</label><input type="date" id="e-stu-dob" class="w-full p-2.5 border rounded-lg bg-white"></div>
+                <div class="col-span-1 lg:col-span-2"><label class="block text-sm font-semibold mb-1">10. Date of Admission</label><input type="date" id="e-stu-adm-date" class="w-full p-2.5 border rounded-lg bg-white"></div>
+                <div class="col-span-1 lg:col-span-2"><label class="block text-sm font-semibold mb-1">11. Student Status</label><select id="e-stu-status" class="w-full p-2.5 border rounded-lg bg-white"><option value="Active">Active</option><option value="Inactive">Inactive</option><option value="Graduated">Graduated</option></select></div>
+                <div class="col-span-1 lg:col-span-2"><label class="block text-sm font-semibold mb-1">12. Aadhaar Number</label><input type="text" id="e-stu-adhaar" class="w-full p-2.5 border rounded-lg bg-white" placeholder="Aadhaar No."></div>
+                <div class="col-span-1 lg:col-span-2"><label class="block text-sm font-semibold mb-1">13. Father's Phone Number</label><input type="tel" id="e-stu-mob" class="w-full p-2.5 border rounded-lg bg-white" placeholder="Father's Phone Number"></div>
+                <div class="col-span-1 lg:col-span-2"><label class="block text-sm font-semibold mb-1">14. Mother's Phone Number</label><input type="tel" id="e-stu-mother-mobile" class="w-full p-2.5 border rounded-lg bg-white" placeholder="Mother's Phone Number"></div>
+                <div class="col-span-1 lg:col-span-2"><label class="block text-sm font-semibold mb-1">15. Permanent Address</label><textarea id="e-stu-addr" rows="1" class="w-full p-2.5 border rounded-lg bg-white" placeholder="Permanent Address"></textarea></div>
+                <input type="hidden" id="e-stu-samastha" value="">
             </div>
             <div class="flex justify-end gap-3 pt-4 border-t mt-2">
                 <button id="edit-student-cancel" class="px-5 py-2.5 bg-gray-200 text-gray-800 font-bold rounded-lg hover:bg-gray-300">Cancel</button>

@@ -2069,6 +2069,62 @@ dropZone.addEventListener('dragleave', () => dropZone.classList.remove('dragover
 dropZone.addEventListener('drop', (e) => { e.preventDefault(); dropZone.classList.remove('dragover'); if(e.dataTransfer.files.length) handleExcelFile(e.dataTransfer.files[0]); });
 fileInput.addEventListener('change', (e) => { if(e.target.files.length) handleExcelFile(e.target.files[0]); });
 
+function normalizeToIsoDate(val) {
+    if (val === null || val === undefined || val === '') return '';
+    if (val instanceof Date && !isNaN(val.getTime())) {
+        const y = val.getFullYear();
+        const m = String(val.getMonth() + 1).padStart(2, '0');
+        const d = String(val.getDate()).padStart(2, '0');
+        return `${y}-${m}-${d}`;
+    }
+    const str = String(val).trim();
+    if (!str) return '';
+
+    // 1. Numeric Excel Date Serial (e.g. 43722)
+    if (/^\d{4,5}(\.\d+)?$/.test(str)) {
+        const num = parseFloat(str);
+        if (num > 1000 && num < 100000) {
+            const utcDays = Math.floor(num - 25569);
+            const date = new Date(utcDays * 86400 * 1000);
+            if (!isNaN(date.getTime())) {
+                const y = date.getUTCFullYear();
+                const m = String(date.getUTCMonth() + 1).padStart(2, '0');
+                const d = String(date.getUTCDate()).padStart(2, '0');
+                return `${y}-${m}-${d}`;
+            }
+        }
+    }
+
+    // 2. ISO format: YYYY-MM-DD or YYYY/MM/DD or YYYY.MM.DD
+    const isoMatch = str.match(/^(\d{4})[-/.](\d{1,2})[-/.](\d{1,2})/);
+    if (isoMatch) {
+        const y = isoMatch[1];
+        const m = isoMatch[2].padStart(2, '0');
+        const d = isoMatch[3].padStart(2, '0');
+        return `${y}-${m}-${d}`;
+    }
+
+    // 3. DD-MM-YYYY or DD/MM/YYYY or DD.MM.YYYY
+    const dmyMatch = str.match(/^(\d{1,2})[-/.](\d{1,2})[-/.](\d{4})/);
+    if (dmyMatch) {
+        const d = dmyMatch[1].padStart(2, '0');
+        const m = dmyMatch[2].padStart(2, '0');
+        const y = dmyMatch[3];
+        return `${y}-${m}-${d}`;
+    }
+
+    // 4. Fallback Date parse
+    const parsed = new Date(str);
+    if (!isNaN(parsed.getTime()) && parsed.getFullYear() > 1900 && parsed.getFullYear() < 2100) {
+        const y = parsed.getFullYear();
+        const m = String(parsed.getMonth() + 1).padStart(2, '0');
+        const d = String(parsed.getDate()).padStart(2, '0');
+        return `${y}-${m}-${d}`;
+    }
+
+    return str;
+}
+
 function handleExcelFile(file) {
     const selectedBulkClass = (document.getElementById('bulk-upload-class')?.value || '').toUpperCase().trim();
     if(!selectedBulkClass) {
@@ -2080,7 +2136,8 @@ function handleExcelFile(file) {
     const reader = new FileReader();
     reader.onload = (e) => {
         try {
-            const data = new Uint8Array(e.target.result), workbook = XLSX.read(data, {type: 'array'});
+            const data = new Uint8Array(e.target.result);
+            const workbook = XLSX.read(data, {type: 'array', cellDates: true});
             const rawData = XLSX.utils.sheet_to_json(workbook.Sheets[workbook.SheetNames[0]], {defval: ""});
             if(rawData.length === 0) return alert("File is empty.");
 
@@ -2088,64 +2145,130 @@ function handleExcelFile(file) {
             const aliasMap = {
                 uid: ['iduid', 'id', 'uid', 'rollno', 'rollnumber'],
                 name: ['name', 'studentname', 'student'],
-                father: ['fathername', 'father', 'parent', 'fatherguardian'],
+                father: ['fathername', 'father', 'parent', 'fatherguardian', 'guardian'],
                 mother: ['mother', 'mothername'],
                 gender: ['gender', 'sex'],
                 status: ['status', 'state'],
-                mobile: ['mobile', 'phone', 'mobileno', 'phonenumber', 'fatherphone', 'fatherphonenumber'],
+                mobile: ['mobile', 'phone', 'mobileno', 'phonenumber', 'fatherphone', 'fatherphonenumber', 'contact', 'contactno'],
                 motherMobile: ['mothermobile', 'motherphone', 'motherphonenumber'],
-                adm: ['admno', 'admissionno', 'admissionnumber', 'adm', 'admn'],
+                adm: ['admno', 'admissionno', 'admissionnumber', 'adm', 'admn', 'admno.'],
                 address: ['permanentaddress', 'address', 'permanent', 'addr'],
-                dob: ['dob', 'dateofbirth', 'birthdate', 'birth'],
-                admDate: ['admdate', 'dateofadmission', 'admissiondate'],
-                adhaar: ['aadhaar', 'adhaar', 'aadharno', 'aadhaarnumber', 'adhaarnumber']
+                dob: ['dob', 'dateofbirth', 'birthdate', 'birth', 'studentdob', 'dobddmmyyyy', 'dateofbirthddmmyyyy'],
+                admDate: ['admdate', 'dateofadmission', 'admissiondate', 'admnsdate', 'admldate', 'joiningdate', 'admissiondateddmmyyyy', 'admdateddmmyyyy'],
+                adhaar: ['aadhaar', 'adhaar', 'aadharno', 'aadhaarnumber', 'adhaarnumber', 'uidai'],
+                samastha: ['samastha', 'samasthaid', 'samasthano', 'regno', 'registrationno']
             };
             excelParsedData = rawData.map(row => {
                 const keys = Object.keys(row);
                 const getVal = (aliases = []) => {
-                    const key = keys.find((col) => aliases.includes(normalizeHeader(col)));
-                    return key ? String(row[key] ?? '').trim() : '';
+                    const key = keys.find((col) => {
+                        const norm = normalizeHeader(col);
+                        return aliases.includes(norm) || aliases.some(a => (norm.startsWith(a) && (norm.includes('date') || norm.includes('dob'))));
+                    });
+                    return key ? (row[key] !== undefined && row[key] !== null ? row[key] : '') : '';
                 };
-                const rawName = getVal(aliasMap.name);
-                const dobVal = getVal(aliasMap.dob);
-                const admDateVal = getVal(aliasMap.admDate);
-                const adhaarVal = getVal(aliasMap.adhaar);
-                const motherVal = getVal(aliasMap.mother);
-                const motherMobileVal = getVal(aliasMap.motherMobile);
+                const rawName = String(getVal(aliasMap.name) || '').trim();
+                const dobVal = normalizeToIsoDate(getVal(aliasMap.dob));
+                const admDateVal = normalizeToIsoDate(getVal(aliasMap.admDate));
+                const adhaarVal = String(getVal(aliasMap.adhaar) || '').trim();
+                const samasthaVal = String(getVal(aliasMap.samastha) || '').trim();
+                const motherVal = String(getVal(aliasMap.mother) || '').trim();
+                const motherMobileVal = String(getVal(aliasMap.motherMobile) || '').trim();
+                const admVal = String(getVal(aliasMap.adm) || '').toUpperCase().trim();
+                const uidVal = String(getVal(aliasMap.uid) || '').trim();
+                const fatherVal = String(getVal(aliasMap.father) || '').toUpperCase().trim();
+                const mobileVal = String(getVal(aliasMap.mobile) || '').trim();
+                const addressVal = String(getVal(aliasMap.address) || '').trim();
+                const statusVal = normalizeStudentStatus(String(getVal(aliasMap.status) || ''));
+                const genderRaw = String(getVal(aliasMap.gender) || '').toLowerCase().trim();
+                const genderVal = genderRaw.startsWith('f') ? 'Female' : 'Male';
+
                 return {
                     academicYear: activeAcademicYear || currentAcademicYear,
                     name: rawName ? rawName.toUpperCase().trim() : "",
                     class: selectedBulkClass,
                     studentClass: selectedBulkClass,
-                    status: normalizeStudentStatus(getVal(aliasMap.status)),
-                    gender: getVal(aliasMap.gender).toLowerCase().startsWith('f') ? 'Female' : 'Male',
-                    uid: getVal(aliasMap.uid),
-                    father: getVal(aliasMap.father).toUpperCase().trim(),
-                    mother: motherVal.toUpperCase().trim(),
-                    mobile: getVal(aliasMap.mobile),
+                    status: statusVal,
+                    gender: genderVal,
+                    uid: uidVal,
+                    father: fatherVal,
+                    mother: motherVal.toUpperCase(),
+                    mobile: mobileVal,
                     motherMobile: motherMobileVal,
-                    adm: getVal(aliasMap.adm).toUpperCase().trim(),
-                    address: getVal(aliasMap.address).trim(),
+                    adm: admVal,
+                    address: addressVal,
+                    dob: dobVal,
+                    admDate: admDateVal,
+                    adm_date: admDateVal,
+                    adhaar: adhaarVal,
+                    samasthaId: samasthaVal,
                     photo: '',
                     profile: {
                         dob: dobVal,
-                        address: getVal(aliasMap.address).trim(),
+                        address: addressVal,
                         adhaar: adhaarVal,
-                        admNo: getVal(aliasMap.adm).toUpperCase().trim(),
+                        admNo: admVal,
                         admDate: admDateVal,
-                        samasthaId: '',
+                        adm_date: admDateVal,
+                        samasthaId: samasthaVal,
                         photo: '',
-                        uid: getVal(aliasMap.uid),
-                        father: getVal(aliasMap.father).toUpperCase().trim(),
-                        mother: motherVal.toUpperCase().trim(),
-                        mobile: getVal(aliasMap.mobile),
+                        uid: uidVal,
+                        father: fatherVal,
+                        mother: motherVal.toUpperCase(),
+                        mobile: mobileVal,
                         motherMobile: motherMobileVal,
-                        status: normalizeStudentStatus(getVal(aliasMap.status))
+                        status: statusVal
                     }
                 };
             }).filter(s => s.name);
 
             document.getElementById('excel-record-count').textContent = `Found ${excelParsedData.length} valid records`;
+            
+            // Render sample preview table
+            const previewContainer = document.getElementById('excel-preview-table-container');
+            if (previewContainer) {
+                if (excelParsedData.length > 0) {
+                    const previewRows = excelParsedData.slice(0, 5);
+                    previewContainer.innerHTML = `
+                        <div class="px-3 py-1.5 bg-blue-50 border-b border-gray-200 text-xs font-semibold text-blue-800 flex justify-between items-center">
+                            <span>Sample Preview (First ${previewRows.length} records)</span>
+                            <span class="text-gray-500 font-normal">Dates formatted to standard YYYY-MM-DD</span>
+                        </div>
+                        <table class="w-full text-xs text-left text-gray-700">
+                            <thead class="bg-gray-100 text-gray-600 font-semibold uppercase">
+                                <tr>
+                                    <th class="p-2 border-b">#</th>
+                                    <th class="p-2 border-b">Name</th>
+                                    <th class="p-2 border-b">Adm No</th>
+                                    <th class="p-2 border-b">DOB (Parsed)</th>
+                                    <th class="p-2 border-b">Adm. Date (Parsed)</th>
+                                    <th class="p-2 border-b">Gender</th>
+                                    <th class="p-2 border-b">Mobile</th>
+                                </tr>
+                            </thead>
+                            <tbody class="divide-y divide-gray-100">
+                                ${previewRows.map((s, idx) => `
+                                    <tr class="hover:bg-gray-50">
+                                        <td class="p-2 text-gray-400">${idx + 1}</td>
+                                        <td class="p-2 font-bold text-gray-900">${s.name}</td>
+                                        <td class="p-2">${s.adm || '--'}</td>
+                                        <td class="p-2 ${s.dob ? 'text-green-700 font-semibold' : 'text-gray-400'}">${s.dob || '--'}</td>
+                                        <td class="p-2 ${s.admDate ? 'text-blue-700 font-semibold' : 'text-gray-400'}">${s.admDate || '--'}</td>
+                                        <td class="p-2">${s.gender}</td>
+                                        <td class="p-2">${s.mobile || '--'}</td>
+                                    </tr>
+                                `).join('')}
+                            </tbody>
+                        </table>
+                        ${excelParsedData.length > 5 ? `<div class="p-1.5 text-center text-xs text-gray-500 bg-gray-50 border-t">Showing first 5 of ${excelParsedData.length} students</div>` : ''}
+                    `;
+                    previewContainer.classList.remove('hidden');
+                } else {
+                    previewContainer.innerHTML = '';
+                    previewContainer.classList.add('hidden');
+                }
+            }
+
             document.getElementById('excel-drop-zone').classList.add('hidden'); document.getElementById('excel-preview-area').classList.remove('hidden');
             document.getElementById('upload-progress-bar').style.display = 'none'; document.getElementById('upload-status-text').textContent = "Ready to upload";
         } catch(err) { console.error(err); alert("Error reading file."); }
@@ -2153,7 +2276,17 @@ function handleExcelFile(file) {
     reader.readAsArrayBuffer(file);
 }
 
-document.getElementById('cancel-upload-btn').addEventListener('click', () => { fileInput.value = ''; excelParsedData = []; document.getElementById('excel-drop-zone').classList.remove('hidden'); document.getElementById('excel-preview-area').classList.add('hidden'); });
+document.getElementById('cancel-upload-btn').addEventListener('click', () => {
+    fileInput.value = '';
+    excelParsedData = [];
+    const previewContainer = document.getElementById('excel-preview-table-container');
+    if (previewContainer) {
+        previewContainer.innerHTML = '';
+        previewContainer.classList.add('hidden');
+    }
+    document.getElementById('excel-drop-zone').classList.remove('hidden');
+    document.getElementById('excel-preview-area').classList.add('hidden');
+});
 
 document.getElementById('start-upload-btn').addEventListener('click', async () => {
     if(!requirePermission('students.manage')) return;
@@ -2201,7 +2334,7 @@ document.getElementById('add-manual-btn').addEventListener('click', async () => 
     if(!requirePermission('students.manage')) return;
     const cls = document.getElementById('add-stu-class').value.toUpperCase().trim(), name = document.getElementById('add-stu-name').value.toUpperCase().trim(), gender = document.getElementById('add-stu-gender').value;
     if(!cls || !name || !gender) return alert("Class, Name and Gender are mandatory.");
-    if(!confirm("വിദ്യാർത്ഥിയെ ആഡ് ചെയ്യട്ടെ?")) return;
+    if(!confirm("Are you sure you want to add this student?")) return;
 
     const photoVal = document.getElementById('add-stu-photo').value.trim();
     const dobVal = document.getElementById('add-stu-dob').value;
@@ -2223,6 +2356,11 @@ document.getElementById('add-manual-btn').addEventListener('click', async () => 
         mother: document.getElementById('add-stu-mother').value.toUpperCase().trim(),
         motherMobile: document.getElementById('add-stu-mother-mobile').value.trim(),
         address: document.getElementById('add-stu-address').value.trim(),
+        dob: dobVal,
+        admDate: admDateVal,
+        adm_date: admDateVal,
+        adhaar: adhaarVal,
+        samasthaId: samasthaVal,
         photo: photoVal,
         profile: {
             dob: dobVal,
@@ -2230,6 +2368,7 @@ document.getElementById('add-manual-btn').addEventListener('click', async () => 
             adhaar: adhaarVal,
             admNo: document.getElementById('add-stu-adm').value.toUpperCase().trim(),
             admDate: admDateVal,
+            adm_date: admDateVal,
             samasthaId: samasthaVal,
             photo: photoVal,
             uid: document.getElementById('add-stu-uid').value.trim(),
@@ -2411,8 +2550,8 @@ document.getElementById('student-list-container').addEventListener('click', e =>
             setVal('e-stu-uid', st.uid || prof.uid || '');
             setVal('e-stu-addr', st.address || prof.address || '');
             setVal('e-stu-status', normalizeStudentStatus(st.status || prof.status));
-            setVal('e-stu-dob', prof.dob || st.dob || '');
-            setVal('e-stu-adm-date', prof.admDate || st.admDate || '');
+            setVal('e-stu-dob', normalizeToIsoDate(prof.dob || st.dob || ''));
+            setVal('e-stu-adm-date', normalizeToIsoDate(prof.admDate || prof.adm_date || st.admDate || st.adm_date || ''));
             setVal('e-stu-adhaar', prof.adhaar || st.adhaar || '');
             setVal('e-stu-samastha', prof.samasthaId || st.samasthaId || '');
             updateAdminPhotoWidgetPreview(st.photo || st.profile?.photo || '', 'e-stu-photo-preview', 'e-stu-photo-placeholder', 'e-stu-remove-btn', 'e-stu-photo');
@@ -2426,9 +2565,12 @@ document.getElementById('student-list-container').addEventListener('click', e =>
 });
 document.getElementById('edit-student-update')?.addEventListener('click', async () => {
     if(!requirePermission('students.manage')) return;
-    if(!confirm("Are you sure you want to update this student's information?")) return;
     const getVal = (id) => (document.getElementById(id)?.value || '').trim();
     const updatedClass = getVal('e-stu-class').toUpperCase();
+    const nameVal = getVal('e-stu-name').toUpperCase();
+    const genderVal = document.getElementById('e-stu-gender')?.value || 'Male';
+    if(!updatedClass || !nameVal || !genderVal) return alert("Class, Name and Gender are mandatory.");
+    if(!confirm("Are you sure you want to update this student's information?")) return;
     const photoVal = getVal('e-stu-photo');
     const dobVal = document.getElementById('e-stu-dob')?.value || '';
     const admDateVal = document.getElementById('e-stu-adm-date')?.value || '';
@@ -2449,6 +2591,11 @@ document.getElementById('edit-student-update')?.addEventListener('click', async 
         motherMobile: getVal('e-stu-mother-mobile'),
         uid: getVal('e-stu-uid'), 
         address: getVal('e-stu-addr'),
+        dob: dobVal,
+        admDate: admDateVal,
+        adm_date: admDateVal,
+        adhaar: adhaarVal,
+        samasthaId: samasthaVal,
         photo: photoVal,
         profile: {
             dob: dobVal,
@@ -2456,6 +2603,7 @@ document.getElementById('edit-student-update')?.addEventListener('click', async 
             adhaar: adhaarVal,
             admNo: getVal('e-stu-adm').toUpperCase(),
             admDate: admDateVal,
+            adm_date: admDateVal,
             samasthaId: samasthaVal,
             photo: photoVal,
             uid: getVal('e-stu-uid'),
