@@ -28,7 +28,10 @@
     -webkit-tap-highlight-color: transparent; 
 }
 
-html { scroll-behavior: auto; }
+html { 
+    scroll-behavior: auto; 
+    scrollbar-gutter: stable;
+}
 html.smooth-scroll { scroll-behavior: smooth; }
 body { overflow-x: hidden; }
 body.modal-scroll-lock {

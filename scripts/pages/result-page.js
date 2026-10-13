@@ -355,15 +355,24 @@ export const showAppAlert = ({
         modal.style.display = 'flex';
         document.body.classList.add('modal-scroll-lock');
 
+        const keyHandler = (e) => {
+            if (e.key === 'Escape' || e.key === 'Enter') {
+                e.preventDefault();
+                cleanUp();
+            }
+        };
+
         const cleanUp = () => {
             modal.classList.add('hidden');
             modal.style.display = 'none';
             document.body.classList.remove('modal-scroll-lock');
             if (okBtn) okBtn.onclick = null;
+            document.removeEventListener('keydown', keyHandler);
             resolve();
         };
 
         if (okBtn) okBtn.onclick = () => cleanUp();
+        document.addEventListener('keydown', keyHandler);
     });
 };
 
@@ -377,8 +386,12 @@ const alert = (message) => {
     const msg = String(message);
     const isError = /error|fail|invalid|stopped|required|select|cannot|choose/i.test(msg);
     const isSuccess = /success|completed|saved|synced|restored|uploaded|published/i.test(msg);
-    const type = isError ? 'error' : isSuccess ? 'success' : 'info';
-    const title = isError ? 'Attention' : isSuccess ? 'Success' : 'Notice';
+    if (isSuccess && !isError) {
+        notify(msg, 'success');
+        return;
+    }
+    const type = isError ? 'error' : 'info';
+    const title = isError ? 'Attention' : 'Notice';
     showAppAlert({ title, message: msg, type });
 };
 const withBusyButton = async (buttonId, labelBusy, runner) => {
@@ -5221,4 +5234,36 @@ document.addEventListener('keydown', (e) => {
         }
     }
 });
+
+// Safeguard: Automatically sync and remove modal-scroll-lock when no modal overlays are visible
+const isOverlayVisible = (el) => {
+    if (!el || el.classList.contains('hidden') || el.style.display === 'none') return false;
+    if (el.style.display === 'flex' || el.style.display === 'block') return true;
+    const style = window.getComputedStyle(el);
+    return style.display !== 'none' && style.visibility !== 'hidden' && style.opacity !== '0';
+};
+
+const syncBodyScrollLockState = () => {
+    const overlays = document.querySelectorAll('.modal-overlay');
+    const hasOpenModal = Array.from(overlays).some((m) => isOverlayVisible(m));
+    if (!hasOpenModal && document.body.classList.contains('modal-scroll-lock')) {
+        document.body.classList.remove('modal-scroll-lock');
+    }
+};
+
+const setupModalObserver = () => {
+    const overlays = document.querySelectorAll('.modal-overlay');
+    if (!overlays.length) return;
+    const observer = new MutationObserver(() => syncBodyScrollLockState());
+    overlays.forEach((el) => {
+        observer.observe(el, { attributes: true, attributeFilter: ['class', 'style'] });
+    });
+    syncBodyScrollLockState();
+};
+
+if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', setupModalObserver, { once: true });
+} else {
+    setupModalObserver();
+}
 
