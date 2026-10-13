@@ -1017,50 +1017,46 @@ const setSidebarCollapsed = (collapsed) => {
     if (!adminApp) return;
     adminApp.classList.toggle('sidebar-collapsed', collapsed);
     localStorage.setItem('admin_sidebar_collapsed', collapsed ? 'true' : 'false');
+    if (!isDesktop() && overlay) {
+        if (!collapsed) {
+            overlay.classList.remove('hidden');
+            setTimeout(() => overlay.classList.remove('opacity-0'), 10);
+        } else {
+            overlay.classList.add('opacity-0');
+            setTimeout(() => overlay.classList.add('hidden'), 300);
+        }
+    }
 };
 
 const toggleSidebarState = () => {
-    if (isDesktop()) {
-        const adminApp = document.getElementById('admin-app');
-        const isCollapsed = adminApp?.classList.contains('sidebar-collapsed');
-        setSidebarCollapsed(!isCollapsed);
-    } else {
-        toggleDrawer(true);
-    }
+    const adminApp = document.getElementById('admin-app');
+    const isCollapsed = adminApp?.classList.contains('sidebar-collapsed');
+    setSidebarCollapsed(!isCollapsed);
 };
 
 const initSidebarState = () => {
     const stored = localStorage.getItem('admin_sidebar_collapsed');
-    setSidebarCollapsed(stored === 'true');
-};
-
-const toggleDrawer = (open) => {
-    if (isDesktop()) return;
-    if (!drawer || !overlay) return;
-    if (open) {
-        overlay.classList.remove('hidden');
-        setTimeout(() => overlay.classList.remove('opacity-0'), 10);
-        drawer.classList.remove('-translate-x-full');
+    if (stored !== null) {
+        setSidebarCollapsed(stored === 'true');
     } else {
-        overlay.classList.add('opacity-0');
-        drawer.classList.add('-translate-x-full');
-        setTimeout(() => overlay.classList.add('hidden'), 300);
+        setSidebarCollapsed(!isDesktop());
     }
 };
 
-document.getElementById('hamburger-btn')?.addEventListener('click', toggleSidebarState);
+const toggleDrawer = (open) => {
+    setSidebarCollapsed(!open);
+};
+
 document.getElementById('sidebar-collapse-btn')?.addEventListener('click', () => {
-    const adminApp = document.getElementById('admin-app');
-    const isCollapsed = adminApp?.classList.contains('sidebar-collapsed');
-    setSidebarCollapsed(!isCollapsed);
+    toggleSidebarState();
 });
-document.getElementById('close-drawer-btn')?.addEventListener('click', () => toggleDrawer(false));
-overlay?.addEventListener('click', () => toggleDrawer(false));
+overlay?.addEventListener('click', () => setSidebarCollapsed(true));
 
 initSidebarState();
 window.addEventListener('resize', () => {
     if (isDesktop() && overlay && !overlay.classList.contains('hidden')) {
-        toggleDrawer(false);
+        overlay.classList.add('opacity-0');
+        overlay.classList.add('hidden');
     }
 });
 
