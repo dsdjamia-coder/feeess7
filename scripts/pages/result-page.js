@@ -3158,6 +3158,7 @@ document.getElementById('save-exam-config-btn')?.addEventListener('click', async
             subjects: selectedSubjects.length ? selectedSubjects : subjectRows.map((subject) => subject.id),
             showMarksToStudents: true
         };
+    });
     if (!Object.keys(nextConfigs).length) {
         const ok = await showAppConfirm({
             title: 'Save Default Terminal Exams Only',
